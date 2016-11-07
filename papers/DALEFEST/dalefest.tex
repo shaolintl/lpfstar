@@ -16,6 +16,18 @@
 \maketitle
 
 \begin{abstract}
+Higher Order Logic Programming and its main incarnation, which is $\lambda$Prolog, were introduced by Nadathur and Miller in the 80s. Like logical frameworks, it allows to write type-checkers extremely naturally, just encoding the derivation rules in an almost verbatim way. In particular, thanks to a shallow encoding of binders, the implementor is relieved from dealing with binders, capture avoiding substitution, alpha-conversion and the like. By delegating them to the language, it can focus on the logic of the program he is implementing and he can hope in future optimizations of the compiler to improve the efficiency of code. Thanks to the Curry-Howard isomorphism, proof-checkers --- e.g. for dependently typed languages --- can also be encoded in the same way.
+
+To implement an interactive theorem prover following the Curry-Howard correspondence, the programmer basically has to generalize the type-checker by allowing incomplete terms whose holes are represented by existentially quantified metavariables. Adopting a deep encoding, the user is forced to implement non-capture-avoiding instantiation, explicit substitutions and higher order unification under a mixed prefix. Therefore, we would prefer a shallow encoding of metavariables, where the existentially quantified metavariables of the logic programming language directly represent metavariables of the encoded typed calculus, and the previously mentioned operations can be largely inherited from the metalevel.
+
+Such deep encodings do not work for $\lambda$Prolog and, more generally, for all higher order logic programming languages and logical frameworks. Indeed, the standard operational semantics of $\lambda$Prolog is generative, i.e. when a predicate like well-typedness inspects a flexible term, all possible instantiations of the latter are tried blindly. On the contrary, in an interactive theorem prover a predicate over a flexible term is supposed to be delayed and turned into a constraint to be solved later. When constraints accumulate, they can be simplified and propagated exactly in the spirit of constraint programming.
+
+In this paper we present a first proposal for an higher order constraint logic
+programming language obtained as an extension of $\lambda$Prolog. We also present
+applications to the implementation of an elaborator for the Calculus of
+Inductive Constructions, i.e. the core of a modern interactive theorem prover
+in the style of Coq, Agda or Matita.
+\end{abstract}
 
 bla bla
 
@@ -29,7 +41,6 @@ bla bla
 \item Experiments with Matita
 \end{itemize}
 
-\end{abstract}
 
 \section{Introduction}
 
