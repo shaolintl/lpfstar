@@ -2,7 +2,7 @@
 
 \usepackage{lipsum}
 
-\title{whatever}
+\title{Higher Order Constraint Logic Programming with Applications to Interactive Theorem Proving}
 \author{Ferruccio Guidi \and Claudio Sacerdoti Coen \and Enrico Tassi}
 \institute{
   Department of Computer Science, University of Bologna \email{...} \and
@@ -29,7 +29,34 @@ Inductive Constructions, i.e. the core of a modern interactive theorem prover
 in the style of Coq, Agda or Matita.
 \end{abstract}
 
-bla bla
+\section{Introduction}
+
+In~\cite{jlp98} Belleannée et. alt. propose a pragmatic reconstruction of $\lambda$Prolog~\cite{lambdap1,lambdap2,lambdap3}, the Higher Order Logic Programming (HOLP) language introduced by Dale Miller and Gopalan Nadathur in the '80s.
+Their conclusion is that $\lambda$Prolog can be characterized as the minimal extension of Prolog that allows to program by structural induction on $\lambda$-terms. According to their reconstruction, in order to achieve that goal, Prolog needs to first be augmented with $\lambda$-abstractions in the term syntax; then types are added to drive full higher-order unification; then universal quantification in goals and $\eta$-equivalence are required to express relations between $\lambda$-abstractions and their bodies; and finally implication in goals is needed to allow for structural induction definitions of predicates.
+
+By means of $\lambda$-abstractions in terms, $\lambda$Prolog can easily encode all kind of binders without the need to take care of binding representation, $\alpha$-conversion, renaming and instantiation. Structural induction over syntax with binders is also made trivial by combining universal quantification and implication following the very same pattern used in Logical Frameworks like LF (also called $\lambda$P). Indeed, LF, endowed with an HOLP semantics like in ???(ELF? Beluga? MMT?) is just a sub-language of $\lambda$Prolog.
+
+The ``hello world'' example of $\lambda$Prolog is therefore the following two lines program to compute the simple type of a $\lambda$-expression:
+
+\begin{verbatim}
+kind ...
+type ...
+of ...
+of ...
+\end{verbatim}
+
+According to the Curry-Howard isomorphism, the program above can also be interpreted as a proof-checker for minimal propositional logic. By escalating the encoded $\lambda$-calculus to more complex terms and types, it is possible to obtain a proof-checker for a much richer logic, like the Calculus of Inductive Constructions that, up to some variations, is the common logic shared by the interactive theorem provers (ITPs) Coq~\cite{}, Lean~\cite{}, Matita~\cite{} and Agda~\cite{}. For example, in~\cite{us} we implemented in $\lambda$Prolog a type-checker for Landau's Grundlagen XXXXXXXX.
+
+Indeed, all the ITPs mentioned above are implemented following basically the same architecture. At the core of the system there is the \emph{kernel}, that is the trusted code base (together with the compiler and run-time of the programming language the system is written on). The kernel just implements the type-checker together with all the judgements required for type-checking, namely: well formation of contexts and environments, substitution, reduction, convertibility. The last three judgements are necessary because the type system has dependent types and therefore types need to be compared up to computation.
+
+The kernel is ultimately responsible for guaranteeing that a proof built using an ITP is fully sound. However, in practice the user never interacts with the kernel and the remaining parts of the system do not depend on the behaviour of the kernel. Where the real intelligence of the system lies is instead the second layer, called \emph{elaborator}.
+
+CONTINUARE COSÌ:
+
+1) dire cosa fa e a cosa serve l'elaborator
+2) dire che usa metavariabili
+3) dire che $\lambda$Prolog funziona male
+4) passare a Constraint Programming
 
 \begin{itemize}
 \item Cheap implementation of PA via semi shallow embedding in LP
