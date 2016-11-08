@@ -333,6 +333,7 @@ $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge S_2 \iff \bigwedge S_3)$ and whos
 
 For example, the rules for type-checking ECC call the predicates \verb+<,max,succ+ over integers. The corresponding elaborator may be faced with sorts like \verb+sort M+ where \verb+M+ is a metavariable. The elaborator is asked to compute a suitable assignment to the metavariables that respects all constraints. Without breaking consistency, the successor predicate can be relaxed to a strictly less than, the max to a generic upper bound and the set of integers to an unspecified partial order, de facto replacing the predicates \verb+<,max,succ+ with generic predicates \verb+leq,ltn+ (lax and strict inequality over an unspecified set). Finally, the two predicates, once turned into constraints, admit the following complete set of CHR propagation rules able to detect strict cicles that correspond to unsatisfiability of the constraints.
 
+\label{chruniverses}
 \begin{verbatim}
 succ I J :- ltn I J.
 I < J :- ltn I J.
@@ -514,11 +515,28 @@ AGGIUNGERE ESEMPIO SU PROPAGAZIONE CONSTRAINTS A LA CHR?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Application}
 
-\subsection{Kernel for CIC}
+\subsection{Kernel for CIC}\label{sec:kernel}
 
 \input{kernel}
 
-\subsection{Prototype elaborator}
+\subsection{Prototype elaborator}\label{sec:elaborator}
+We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\ref{xxx}, with the exception of the handling of universe constraints that follows Coq XXX~\ref{yyy}.
+
+An alternative very promising choice would have been to mimic the elaborator described in~\ref{zzz} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
+
+To implement the elaborator, the following steps need to be taken at the beginning of a file that accumulates at the end the code of the kernel and of the file implementing the PTS rules.
+\begin{itemize}
+\item The accumulated code for the PTS is not the ones accumulated by the kernel that just verifies the typing inequations, but the one based on the first order CHR rules presented in Section~\ref{chruniverses}.
+\item The following predicates defined by structural recursion over a term
+ must be given a suitable mode to prevent the generative behaviour:
+ AAA (type checking), BBB (reduction), CCC (conversion), plus all derived
+ predicates like DDD that infers a type and checks that the inferred type is
+ a sort.
+\item A line is inserted to delay type checking a flexible term. A suitable set of propagation rules in CHR style can be added to capture unicity of typing.
+\item Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic, in the case $M~t = s$ tries to instantiates $M$ with
+$\lambda x. s[x/t]$ where the latter operation replaces with $x$ subterms of $s$ that unify with $t$. In practice, in Huet's terminology it always prefer projection to mimic. When $M$ is applied to multiple $t$s or to flexible $t$s, further heuristics are used to pick one of the solution. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interactive with the ITP.
+\item In place of delaying reducing a flexible term, the term is returned in the current state, weakening the semantics of the the BBB predicate. In practice, this is not a problem because the result of reduction is then always passed to the conversion predicate.
+\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
