@@ -144,10 +144,17 @@ depend on the behaviour of the kernel. Where the real intelligence of
 the system lies is instead the second layer, called \emph{elaborator}
 or \emph{refiner}~\cite{??,??,??}.
 
-We investigate if lp can do that too, if not what shall be added.
-We the present a kernel and a prototype refiner for CIC
 
-\section{The elaborator component of regular ITPs}
+In this paper we investigate if lp can do that too, if not
+what shall be added.  We start by detailing what an elaborator is and
+why the state of the art is not satisfactory.  We then present the
+issues
+we faced when coding an elaborator in lp and how similar issues are
+dealt with in regular prolog.  We then present ELPI, our extension to
+lp.  Finally we present a kernel and a prototype refiner for CIC
+written in ELPI.  We then conclude.
+
+\section{The elaborator component of today's ITPs}
 
 An elaborator takes in input a \emph{partial term} and optionally a
 type, and returns the closest term similar to the input one such that
@@ -235,7 +242,7 @@ The approach is sub-optimal in many ways:
 	static analysis and predictability.
 \end{enumerate}
 
-\paragraph{Motivations}
+\paragraph{Motivations and approach}
 
 The motivation of our research is to try to improve over the latter
 issues by identifying an high level (logic) programming language as
@@ -265,8 +272,10 @@ observation that the third layer of an ITP, the ones of tactics, is
 better implemented on a language where backtracking is naturally
 implemented and controlled.
 
+Approach: SEMI SHALLOW EMBEDDING.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{$\lambda$Prolog and partial terms: problems}
+\section{$\lambda$Prolog meets partial terms: problems}
 
 
 \paragraph{Failure of $\lambda$Prolog as an high level language for
@@ -328,6 +337,34 @@ explain CHR in 1st order here.
 \subsection{incomplete terms, delay}
 
 \subsection{delayed goals, propagate}
+
+\begin{verbatim}
+constraint of {
+  rule (G ?- of X T1) \ (G ?- of X T2) <=> (G ?- conv T1 T2).
+}
+\end{verbatim}
+
+of course one would like G to be compared like that
+
+\begin{verbatim}
+constraint of {
+  map2 _ [] [].
+  map2 F [X|XS] [Y|YS] :- F X Y, map2 F XS YS.
+  conv-of (of X T1) (of X T2) :- conv T1 T2.
+
+  rule (nabla xv\ G2 xv ?- of (X xv) T1)
+     \ (nabla yv\ G2 yv ?- of (X yv) T2)
+     > (xv ~ yv)
+   % after that point, G1 G2 T1 T2 are aligned on the names
+   % and G1 G2 are sorted accordingly (or map2 is made more complex)
+     | (pi zv\ map2 conv-of (G1 zv) (G2 zv))
+     <=> (nabla zv\ G1 zv ?- conv T1 T2).
+}
+\end{verbatim}
+
+or even better to have such semantics built-in in the former example
+but what if outside llam?
+
 
 DIRE CHE BASTA AGGIUNGERE un \$delay MA FORSE QUI CI VORREBBE QUELLO AD ALTISSIMO LIVELLO CHE NON ABBIAMO
 
