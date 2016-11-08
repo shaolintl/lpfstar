@@ -66,10 +66,12 @@ following two lines program to compute the simple type of a
 $\lambda$-expression:
 
 \begin{verbatim}
-kind ...
-type ...
-of ...
-of ...
+kind term type.
+type app term -> term -> term.
+type lam (term -> term) -> term.
+type arr term -> term -> term.
+of (app M N) B :- of M (arr A B), of N A.
+of (lam F) (arr A B) :- pi x\ of x A => of (F x) B.
 \end{verbatim}
 
 \paragraph{$\lambda$Prolog for proof-checking.}
@@ -94,6 +96,28 @@ of contexts and environments, substitution, reduction, convertibility.
 The last three judgements are necessary because the type system has
 dependent types and therefore types need to be compared up to
 computation.
+
+another interesting program (conv step by step, avoid reductions if
+possible)
+
+\begin{verbatim}
+type conv term -> term -> o.
+conv (app M1 N1) (app M2 N2) :- conv M1 M2, conv N1 N2.
+conv (app (lam F) N) T :- conv (F N) T.
+conv T (app (lam F) N) T :- conv T (F N).
+conv (lam F1) (lam F2) :- pi x\ conv x x => conv (F1 x) (F2 x).
+\end{verbatim}
+
+that is needed for dependent typwes
+
+\begin{verbatim}
+kind term type.
+type app term -> term -> term.
+type lam (term -> term) -> term.
+type arr term -> (term -> term) -> term
+of (app M N) BN :- of M (arr A1 Bx), of N A2, conv A1 A2, BN = Bx N.
+of (lam F) (arr A B) :- pi x\ of x A => of (F x) (B x).
+\end{verbatim}
 
 \paragraph{From proof-checking to interactive proving.}
 
