@@ -32,6 +32,7 @@ Inductive Constructions, i.e. the core of a modern interactive theorem prover
 in the style of Coq, Agda or Matita.
 \end{abstract}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
 \paragraph{A pragmatic reconstruction of $\lambda$Prolog}.
@@ -180,6 +181,7 @@ advanced is the elaborator, the simpler the code implementing tactics
 can be.
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \paragraph{State of the art in implementation of elaborators.}
 
 The elaborators of the majority of the provers mentioned above are all
@@ -263,7 +265,8 @@ observation that the third layer of an ITP, the ones of tactics, is
 better implemented on a language where backtracking is naturally
 implemented and controlled.
 
-\section{$\lambda$Prolog and partial terms, problems}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{$\lambda$Prolog and partial terms: problems}
 
 
 \paragraph{Failure of $\lambda$Prolog as an high level language for
@@ -273,11 +276,18 @@ extension of Prolog that allows to implement inductive predicates over
 syntax containing binders. Does it work when applied to data that is
 meant to containt existentially quantified metavariables too?
 
-Consider the $\lambda$-term XXXXXXXXXXXXXXXXXXXXX that encodes a partial proof of YYYYYYY. If we run the ZZZZ query as an elaborator, the computation diverges:
+Consider the $\lambda$-term \verb+(lam a\ P a)+ that encodes a
+partial proof of $\forall A, A -> A$.
+If we run the following query, the computation diverges:
 
-WWWWWWWWWWWWWW
+\begin{verbatim}
+goal> of (lam a\P a) (arr (sort i) a\ arr a _\ a)
+\end{verbatim}
 
-Indeed the AAA predicate inherits from Prolog a generative semantics:
+Indeed, \verb+P+ is flexible and the \verb+of (app M N) ..+
+rule applies indefinitely.
+
+Indeed the \verb+of+ predicate inherits from Prolog a generative semantics:
 when called recursively on a flexible input, it blindly enumerates all
 instances trying to find the ones that are well typed. Even when proof
 search does not diverge, the behaviour obtained is not the one
@@ -290,9 +300,34 @@ instantiated. In the example above, type-checking AAAAAAAAAA forces
 the system to remember to BBBBBBBBBB that corresponds to the new proof
 obligation CCCC.
 
-\section{ELPI = lp + CHR}
+This is not a problem specific of lp, also Prolog has it.
+Indeed all modern Prolog engine provide a \verb+var/1+ built-in
+to test/guard predicates against flexible input, provide one/many
+variants of \verb+delay/2+ to suspend a goal, provide modes
+declarations to both statically/dynamically detect problematic
+calls.
 
-\paragraph{An Higher Order Constraint Logic Programming core: $\lambda$Prolog + \texttt{\$delay}}
+Another issue is when \verb-(J is I + 1)- or \verb+I <= J+ 
+is run on a flexible
+\verb+I+.  For this kind of situations Prolog is typically augmented
+with constraint solvers (CLP).  These also propagate, i.e. 
+\verb-I <= J < I + 1- would fix \verb+J+, while \verb+I < I+ would
+cause failure and backtracking.
+
+The most general framework to describe this class of ??? is CHR.
+
+explain CHR in 1st order here.
+
+...
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{ELPI = lp + (ho)CHR}
+
+\subsection{incomplete terms, delay}
+
+\subsection{delayed goals, propagate}
 
 DIRE CHE BASTA AGGIUNGERE un \$delay MA FORSE QUI CI VORREBBE QUELLO AD ALTISSIMO LIVELLO CHE NON ABBIAMO
 
@@ -300,7 +335,7 @@ FARLO VEDERE SULL'ESEMPIO?
 
 AGGIUNGERE ESEMPIO SU PROPAGAZIONE CONSTRAINTS A LA CHR?
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Application}
 
 \subsection{Kernel for CIC}
@@ -308,6 +343,7 @@ AGGIUNGERE ESEMPIO SU PROPAGAZIONE CONSTRAINTS A LA CHR?
 \subsection{Prototype elaborator}
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Related works}
 
 \section{SCALETTA}
