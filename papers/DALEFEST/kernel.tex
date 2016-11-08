@@ -1,0 +1,33 @@
+A kernel for CIC must define two main relations on CIC terms:
+\verb+type_step T U+
+asserting that \verb+U+ is an inferred type of \verb+T+,
+and \verb+conv U1 U2+ 
+asserting that \verb+U1+ and \verb+U2+ are convertible
+(we take the name \verb+type_step+ from XXXXXXXXXXXX).
+
+Our prototype achieves this goal by taking advantage of the next features of $\lambda$Prolog.
+
+\begin{itemize}
+
+\item
+We can extend the existing predicates on new forms of terms
+simply by adding clauses concerning these forms. 
+Therefore the kernel's architecture can be modular,
+in that a core kernel designed for an arbitrary full pure type system (PTS)
+underlies a kernel extension taking care of global constants,
+inductive types and recursive definitions.
+We define the sort hierarchy of CIC in a separate component of the kernel as well.
+This component describes the signature of CIC as a PTS,
+and the subsumption relation on CIC sorts.
+
+\item
+In CIC, both conversion and type inference occur w.r.t. an environment,
+and we can use the implicit environment provided by the
+$\lambda$Prolog engine, instead of defining our own environment explicitly.
+The environment must maintain the expected type of constants and variables,
+as well as their $\delta$-expansion when appropriate.
+At the moment, we take the data on global constants from the
+enviroment of the Matita ITP, with which we interface the extended
+component of our kernel. XXXXXXXXXX
+
+\end{itemize}
