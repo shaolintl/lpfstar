@@ -4,7 +4,8 @@
 \usepackage{amsfonts}
 \usepackage[utf8]{inputenc}
 
-\title{Higher Order Constraint Logic Programming with Applications to Interactive Theorem Proving}
+% \title{Higher Order Constraint Logic Programming with Applications to Interactive Theorem Proving}
+\title{The pragmatic construction of ELPI}
 \author{Ferruccio Guidi \and Claudio Sacerdoti Coen \and Enrico Tassi}
 \institute{
   Department of Computer Science, University of Bologna \email{...} \and
@@ -35,12 +36,34 @@ in the style of Coq, Agda or Matita.
 
 \paragraph{A pragmatic reconstruction of $\lambda$Prolog}.
 
-In~\cite{jlp98} Belleannée et. alt. propose a pragmatic reconstruction of $\lambda$Prolog~\cite{lambdap1,lambdap2,lambdap3}, the Higher Order Logic Programming (HOLP) language introduced by Dale Miller and Gopalan Nadathur in the '80s.
-Their conclusion is that $\lambda$Prolog can be characterized as the minimal extension of Prolog that allows to program by structural induction on $\lambda$-terms. According to their reconstruction, in order to achieve that goal, Prolog needs to first be augmented with $\lambda$-abstractions in the term syntax; then types are added to drive full higher-order unification; then universal quantification in goals and $\eta$-equivalence are required to express relations between $\lambda$-abstractions and their bodies; and finally implication in goals is needed to allow for structural induction definitions of predicates.
+In~\cite{jlp98} Belleannée et. alt. propose a pragmatic reconstruction
+of $\lambda$Prolog~\cite{lambdap1,lambdap2,lambdap3}, the Higher Order
+Logic Programming (HOLP) language introduced by Dale Miller and
+Gopalan Nadathur in the '80s.
+Their conclusion is that $\lambda$Prolog can be characterized as the
+minimal extension of Prolog that allows to program by structural
+induction on $\lambda$-terms. According to their reconstruction, in
+order to achieve that goal, Prolog needs to first be augmented with
+$\lambda$-abstractions in the term syntax; then types are added to
+drive full higher-order unification; then universal quantification in
+goals and $\eta$-equivalence are required to express relations between
+$\lambda$-abstractions and their bodies; and finally implication in
+goals is needed to allow for structural induction definitions of
+predicates.
 
-By means of $\lambda$-abstractions in terms, $\lambda$Prolog can easily encode all kind of binders without the need to take care of binding representation, $\alpha$-conversion, renaming and instantiation. Structural induction over syntax with binders is also made trivial by combining universal quantification and implication following the very same pattern used in Logical Frameworks like LF (also called $\lambda$P). Indeed, LF, endowed with an HOLP semantics like in ???(ELF? Beluga? MMT?) is just a sub-language of $\lambda$Prolog.
+By means of $\lambda$-abstractions in terms, $\lambda$Prolog can
+easily encode all kind of binders without the need to take care of
+binding representation, $\alpha$-conversion, renaming and
+instantiation. Structural induction over syntax with binders is also
+made trivial by combining universal quantification and implication
+following the very same pattern used in Logical Frameworks like LF
+(also called $\lambda$P). Indeed, LF, endowed with an HOLP semantics
+like in ???(ELF? Beluga? MMT?) is just a sub-language of
+$\lambda$Prolog.
 
-The ``hello world'' example of $\lambda$Prolog is therefore the following two lines program to compute the simple type of a $\lambda$-expression:
+The ``hello world'' example of $\lambda$Prolog is therefore the
+following two lines program to compute the simple type of a
+$\lambda$-expression:
 
 \begin{verbatim}
 kind ...
@@ -51,50 +74,171 @@ of ...
 
 \paragraph{$\lambda$Prolog for proof-checking.}
 
-According to the Curry-Howard isomorphism, the program above can also be interpreted as a proof-checker for minimal propositional logic. By escalating the encoded $\lambda$-calculus to more complex terms and types, it is possible to obtain a proof-checker for a much richer logic, like the Calculus of Inductive Constructions that, up to some variations, is the common logic shared by the interactive theorem provers (ITPs) Coq~\cite{}, Lean~\cite{}, Matita~\cite{} and Agda~\cite{}. For example, in~\cite{us} we implemented in $\lambda$Prolog a type-checker for Landau's Grundlagen XXXXXXXX.
+According to the Curry-Howard isomorphism, the program above can also
+be interpreted as a proof-checker for minimal propositional logic. By
+escalating the encoded $\lambda$-calculus to more complex terms and
+types, it is possible to obtain a proof-checker for a much richer
+logic, like the Calculus of Inductive Constructions that, up to some
+variations, is the common logic shared by the interactive theorem
+provers (ITPs) Coq~\cite{}, Lean~\cite{}, Matita~\cite{} and
+Agda~\cite{}. For example, in~\cite{us} we implemented in
+$\lambda$Prolog a type-checker for Landau's Grundlagen XXXXXXXX.
 
-Indeed, all the ITPs mentioned above are implemented following basically the same architecture. At the core of the system there is the \emph{kernel}, that is the trusted code base (together with the compiler and run-time of the programming language the system is written on). The kernel just implements the type-checker together with all the judgements required for type-checking, namely: well formation of contexts and environments, substitution, reduction, convertibility. The last three judgements are necessary because the type system has dependent types and therefore types need to be compared up to computation.
+Indeed, all the ITPs mentioned above are implemented following
+basically the same architecture. At the core of the system there is
+the \emph{kernel}, that is the trusted code base (together with the
+compiler and run-time of the programming language the system is
+written on). The kernel just implements the type-checker together with
+all the judgements required for type-checking, namely: well formation
+of contexts and environments, substitution, reduction, convertibility.
+The last three judgements are necessary because the type system has
+dependent types and therefore types need to be compared up to
+computation.
 
 \paragraph{From proof-checking to interactive proving.}
 
-The kernel is ultimately responsible for guaranteeing that a proof built using an ITP is fully sound. However, in practice the user never interacts with the kernel and the remaining parts of the system do not depend on the behaviour of the kernel. Where the real intelligence of the system lies is instead the second layer, called \emph{elaborator} or \emph{refiner}~\cite{??,??,??}.
+The kernel is ultimately responsible for guaranteeing that a proof
+built using an ITP is fully sound. However, in practice the user never
+interacts with the kernel and the remaining parts of the system do not
+depend on the behaviour of the kernel. Where the real intelligence of
+the system lies is instead the second layer, called \emph{elaborator}
+or \emph{refiner}~\cite{??,??,??}.
 
-An elaborator takes in input a \emph{partial term} and optionally a type, and returns the closest term similar to the input one such that the term has the expected type. Both the input and output terms are partial in the sense that subterms can be omitted and replaced with named holes to be later filled in or, in logic programming terminology, with \emph{existentially quantified metavariables}. For example, the partial term $\lambda x: T. f~(X~x)~Y$ where $T,X,Y$ are quantified outside the term represents the $\lambda$-abstraction over $x$ of a type yet to be determined of the application of $f$ to two arguments, both to be yet determined and such that $x$ can happear free only in the first. Elaborating the term versus the expected type $\mathbb{N} \to \mathbb{B}$ will instantiate $T$ with $\mathbb{N}$ and verify that $f$ is a binary function returning a boolean.
+An elaborator takes in input a \emph{partial term} and optionally a
+type, and returns the closest term similar to the input one such that
+the term has the expected type. Both the input and output terms are
+partial in the sense that subterms can be omitted and replaced with
+named holes to be later filled in or, in logic programming
+terminology, with \emph{existentially quantified metavariables}. For
+example, the partial term $\lambda x: T. f~(X~x)~Y$ where $T,X,Y$ are
+quantified outside the term represents the $\lambda$-abstraction over
+$x$ of a type yet to be determined of the application of $f$ to two
+arguments, both to be yet determined and such that $x$ can happear
+free only in the first. Elaborating the term versus the expected type
+$\mathbb{N} \to \mathbb{B}$ will instantiate $T$ with $\mathbb{N}$ and
+verify that $f$ is a binary function returning a boolean.
 
-The importance of the elaborator is twofold. On the first hand, it allows to interpret the terms that are input by the user, usually by means of a user-friendly syntax where information can be omitted, mathematical notation is used and abused, subtyping is assumed even if elements of the first type can only be coerced to elements of the second by inserting a function call in the elaborated term. A better elaborator therefore gives to the user the feeling of a more intelligent and user friendly system. On the other hand, via Curry-Howard, a partial term is a partial proof and an ITP is all about instantiating holes in partial proofs with new partial terms to advance in the proof. The elaborator is thus the mechanism that takes a partial sub-proof and makes it fit in the global one to progress on a particular proof obligation. In other words, all tactics of the ITP ultimately produce partial proof terms that are elaborated. The more advanced is the elaborator, the simpler the code implementing tactics can be.
+The importance of the elaborator is twofold. On the first hand, it
+allows to interpret the terms that are input by the user, usually by
+means of a user-friendly syntax where information can be omitted,
+mathematical notation is used and abused, subtyping is assumed even if
+elements of the first type can only be coerced to elements of the
+second by inserting a function call in the elaborated term. A better
+elaborator therefore gives to the user the feeling of a more
+intelligent and user friendly system. On the other hand, via
+Curry-Howard, a partial term is a partial proof and an ITP is all
+about instantiating holes in partial proofs with new partial terms to
+advance in the proof. The elaborator is thus the mechanism that takes
+a partial sub-proof and makes it fit in the global one to progress on
+a particular proof obligation. In other words, all tactics of the ITP
+ultimately produce partial proof terms that are elaborated. The more
+advanced is the elaborator, the simpler the code implementing tactics
+can be.
 
 \paragraph{State of the art in implementation of elaborators.}
 
-The elaborators of the majority of the provers mentioned above are all implemented according to the same schema: the syntax of terms is augmented with explicitly substituted existential variables; the judgements of the kernel are re-implemented from stretch, generalizing them to take in account metavariables and elaboration. In particular: reduction acts on metavariables too; conversion becomes narrowing, i.e. higher order unification under a mixed prefix~\cite{???} in presence of rewriting rules; unification requires metavariable instantiation, that is implemented lazily for efficiency; type checking is generalized to elaboration, for example by replacing all calls to conversion with calls to narrowing and by threading around a new environment for the signature of metavariables.
+The elaborators of the majority of the provers mentioned above are all
+implemented according to the same schema: the syntax of terms is
+augmented with explicitly substituted existential variables; the
+judgements of the kernel are re-implemented from stretch, generalizing
+them to take in account metavariables and elaboration. In particular:
+reduction acts on metavariables too; conversion becomes narrowing,
+i.e. higher order unification under a mixed prefix~\cite{???} in
+presence of rewriting rules; unification requires metavariable
+instantiation, that is implemented lazily for efficiency; type
+checking is generalized to elaboration, for example by replacing all
+calls to conversion with calls to narrowing and by threading around a
+new environment for the signature of metavariables.
 
 The approach is sub-optimal in many ways:
 \begin{enumerate}
 \item A lot of code is duplicated with the kernel.
-\item A lot of code is essentially logic independent, but it needs to be
- implemented again for every system: mostly code that deals with binders ($\alpha$-conversion, capture avoiding substitution, renaming) and code that deals with existentially quantified metavariables (explicit substitution management, name capturing instantiation, higher order unification under a mixed prefix).
-\item There is no guarantee that elaborated terms will be actually accepted by
- the kernel.
-\item Most of the problems tackled, like higher order unification, are only semi-decidable. For efficiency reasons a lot of incomplete heuristics are implemented to speed up the system and reduce backtracking. The heuristics, however, are quite ad-hoc and they interact with one another in unpredictable ways. Because they are hidden in the code, the whole system becomes unpredictable to the user, unless an heavy layer is put around the elaborator to recover predicibility by reducing the invocations of the elaborator (cfr.~\cite{SOZEAU?}).
-\item The elaborator is the brain of the system, but it is oblivious of the pragmatic ways to use the knowledge in the prover library, e.g. to automatically fill in gaps~\cite{mathcomponents}, to coerce data from one type to another~\cite{coercivesubtyping} or to enrich data to resolve mathematical abuse of notation~\cite{nonuniformunificationhints}. Therefore the recent trend is to let the user drive the behaviour of the elaborator in user space by writing pieces of declarative code in disguise that are integrated in the core algorithm. The languages to write this code are obviously high level, hiding the user from the intricacies of representation of bound variables, metavariables, etc. The overall program logic is therefore splitted in multiple languages, defying the hope for static analysis and predictability.
+\item A lot of code is essentially logic independent, but it needs to
+	be implemented again for every system: mostly code that deals
+	with binders ($\alpha$-conversion, capture avoiding
+	substitution, renaming) and code that deals with existentially
+	quantified metavariables (explicit substitution management,
+	name capturing instantiation, higher order unification under a
+	mixed prefix).
+\item There is no guarantee that elaborated terms will be actually
+	accepted by the kernel.
+\item Most of the problems tackled, like higher order unification, are
+	only semi-decidable. For efficiency reasons a lot of
+	incomplete heuristics are implemented to speed up the system
+	and reduce backtracking. The heuristics, however, are quite
+	ad-hoc and they interact with one another in unpredictable
+	ways. Because they are hidden in the code, the whole system
+	becomes unpredictable to the user, unless an heavy layer is
+	put around the elaborator to recover predicibility by reducing
+	the invocations of the elaborator (cfr.~\cite{SOZEAU?}).
+\item The elaborator is the brain of the system, but it is oblivious
+	of the pragmatic ways to use the knowledge in the prover
+	library, e.g. to automatically fill in
+	gaps~\cite{mathcomponents}, to coerce data from one type to
+	another~\cite{coercivesubtyping} or to enrich data to resolve
+	mathematical abuse of
+	notation~\cite{nonuniformunificationhints}. Therefore the
+	recent trend is to let the user drive the behaviour of the
+	elaborator in user space by writing pieces of declarative code
+	in disguise that are integrated in the core algorithm. The
+	languages to write this code are obviously high level, hiding
+	the user from the intricacies of representation of bound
+	variables, metavariables, etc. The overall program logic is
+	therefore splitted in multiple languages, defying the hope for
+	static analysis and predictability.
 \end{enumerate}
 
-The motivation of our research is to try to improve over the latter issues by identifying an high level (logic) programming language as general as possible, but suitable at least for the implementation of elaborators. In particular:
+The motivation of our research is to try to improve over the latter
+issues by identifying an high level (logic) programming language as
+general as possible, but suitable at least for the implementation of
+elaborators. In particular:
 \begin{enumerate}
-\item The programming language should take care of representation of bindings and metavariables, and implement all related basic operations. This would solve issues 2) and 5) above, allowing both the core implementors and the users to work on the same, high level code.
-\item Issue 3) should become less severe, because the now high level code would be inspectable by the user that could also replace it in case of need.
-\item The rules of the kernel should not be re-implemented in the elaborator. On the contrary, and in the usual spirit of logic programming, it should be possible to implement the accumulator by adding rules to the kernel. Moreover, the language should make it easy to prove that the additional rules grant that the elaborated terms are well-typed according to the core set of rules of the kernel.
+\item The programming language should take care of representation of
+	bindings and metavariables, and implement all related basic
+	operations. This would solve issues 2) and 5) above, allowing
+	both the core implementors and the users to work on the same,
+	high level code.
+\item Issue 3) should become less severe, because the now high level
+	code would be inspectable by the user that could also replace
+	it in case of need.
+\item The rules of the kernel should not be re-implemented in the
+	elaborator. On the contrary, and in the usual spirit of logic
+	programming, it should be possible to implement the
+	accumulator by adding rules to the kernel. Moreover, the
+	language should make it easy to prove that the additional
+	rules grant that the elaborated terms are well-typed according
+	to the core set of rules of the kernel.
 \end{enumerate}
 
-The requirement for the language to be a logic one is motivated both by our hope to reuse or at least extend $\lambda$Prolog and by the observation that the third layer of an ITP, the ones of tactics, is better implemented on a language where backtracking is naturally implemented and controlled.
+The requirement for the language to be a logic one is motivated both
+by our hope to reuse or at least extend $\lambda$Prolog and by the
+observation that the third layer of an ITP, the ones of tactics, is
+better implemented on a language where backtracking is naturally
+implemented and controlled.
 
-\paragraph{Failure of $\lambda$Prolog as an high level language for implementing elaborators.}
-We already know from~\cite{jlp98} that $\lambda$Prolog is the minimal extension of Prolog that allows to implement inductive predicates over syntax containing binders. Does it work when applied to data that is meant to containt existentially quantified metavariables too?
+\paragraph{Failure of $\lambda$Prolog as an high level language for
+implementing elaborators.}
+We already know from~\cite{jlp98} that $\lambda$Prolog is the minimal
+extension of Prolog that allows to implement inductive predicates over
+syntax containing binders. Does it work when applied to data that is
+meant to containt existentially quantified metavariables too?
 
 Consider the $\lambda$-term XXXXXXXXXXXXXXXXXXXXX that encodes a partial proof of YYYYYYY. If we run the ZZZZ query as an elaborator, the computation diverges:
 
 WWWWWWWWWWWWWW
 
-Indeed the AAA predicate inherits from Prolog a generative semantics: when called recursively on a flexible input, it blindly enumerates all instances trying to find the ones that are well typed. Even when proof search does not diverge, the behaviour obtained is not the one expected from an elaborator for an \emph{interactive} prover: the elaborator is not meant to fill in the term, unless the choice is obliged. On the contrary, it should leave the metavariable not instantiated, but the system should \emph{remember} the need for veryfing if the predicate holds later on, when the metavariable gets instantiated. In the example above, type-checking AAAAAAAAAA forces the system to remember to BBBBBBBBBB that corresponds to the new proof obligation CCCC.
+Indeed the AAA predicate inherits from Prolog a generative semantics:
+when called recursively on a flexible input, it blindly enumerates all
+instances trying to find the ones that are well typed. Even when proof
+search does not diverge, the behaviour obtained is not the one
+expected from an elaborator for an \emph{interactive} prover: the
+elaborator is not meant to fill in the term, unless the choice is
+obliged. On the contrary, it should leave the metavariable not
+instantiated, but the system should \emph{remember} the need for
+veryfing if the predicate holds later on, when the metavariable gets
+instantiated. In the example above, type-checking AAAAAAAAAA forces
+the system to remember to BBBBBBBBBB that corresponds to the new proof
+obligation CCCC.
 
 \paragraph{An Higher Order Constraint Logic Programming core: $\lambda$Prolog + \texttt{\$delay}}
 
