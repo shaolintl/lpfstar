@@ -325,10 +325,32 @@ cause failure and backtracking.
 
 The most general framework to describe this class of ??? is CHR.
 
-explain CHR in 1st order here.
+explain CHR in 1st order here: \verb+\+ removes, \verb+<=>+ adds
 
-...
+\begin{verbatim}
+constraint leq ltn {
+  % incompatibility
+  rule (leq X Y) (ltn Y X) <=> false.
+  rule (ltn X Y) (ltn Y X) <=> false.
+  rule (ltn X X) <=> false.
+  
+  % reflexivity
+  rule \ (leq X X).
 
+  % atisymmetry
+  rule (leq X Y) \ (leq Y X) <=> (Y = X).
+
+  % transitivity
+  rule (leq X Y) (leq Y Z) <=> (leq X Z).
+  rule (leq X Y) (ltn Y Z) <=> (ltn X Z).
+  rule (ltn X Y) (leq Y Z) <=> (ltn X Z).
+  rule (ltn X Y) (ltn Y Z) <=> (ltn X Z).
+
+  % idempotence
+  rule (leq X Y) \ (leq X Y).
+  rule (ltn X Y) \ (ltn X Y).
+}
+\end{verbatim}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -336,7 +358,77 @@ explain CHR in 1st order here.
 
 \subsection{incomplete terms, delay}
 
-\subsection{delayed goals, propagate}
+The hi level directive is
+
+\begin{verbatim}
+delay (of X T) on X.
+\end{verbatim}
+
+The low level one (implemented)
+
+\begin{verbatim}
+mode (of i o).
+of X T :- var X, delay (of X T) [X].
+\end{verbatim}
+
+Note that the mode makes it so that \verb+i+ arguments are never
+instantiated by backchaining, so other rules (generative) would not
+apply.  This is so common we provide the following syntactic sugar.
+
+\begin{verbatim}
+of (?? as X) T :- delay (of X T) [X].
+\end{verbatim}
+
+where \verb+??+ is a symbol unifying only with flexible, and
+\verb+f (t as X) :- c+ de-sugars to \verb+f X :- X = t, c+,
+i.e. it is a syntax to name a subterm reminiscent of what OCaml
+pattern matching let one do.
+
+Delayed goals become constraints keyed on the flexible variable
+(\verb+X+ in the example above).  \emph{As soon} as \verb+X+ gets
+instantiated, the delayed goal is resumed.  Symmetrically, as soon
+as a contraint is added propagation is triggered.
+
+If we go back to our previous example
+
+\begin{verbatim}
+goal> of (lam a\P a) (arr (sort I) a\ arr a _\ a).
+\end{verbatim}
+
+would end with a delayed goal
+
+\begin{verbatim}
+of x (sort I) ?- of (P x) (arr x _\ x)
+\end{verbatim}
+
+a subsequent query
+
+\begin{verbatim}
+goal> P = a\ lam pa\ Q a pa .
+\end{verbatim}
+
+would resume the goal
+
+\begin{verbatim}
+of x (sort I) ?- of (lam pa\ Q x pa) (arr x _\ x)
+\end{verbatim}
+
+that would progress into the again suspended goal
+
+\begin{verbatim}
+of x (sort I), of y x ?- of (Q x y) x
+\end{verbatim}
+
+ITPs build the proof term by instantiation, and one has to check
+if it fits typing.  Here one cannot forget the check, since it is
+the programming language that resumes type checking whenever there is
+proof progress (by uvar instantiation).
+
+\subsection{delayed goals, HO constraint propagation}
+
+CHR seen before does 1st order constraints, here one wants to deal
+with lp goals as constraints.  Eg one wants to write  propagation
+rules like this one
 
 \begin{verbatim}
 constraint of {
@@ -344,20 +436,44 @@ constraint of {
 }
 \end{verbatim}
 
+it reflects uniqueness of typing: if \verb+X+ is used non linearly,
+then each occurrence must have the same type.
+
+the proof theoretic semantics of lp suggests that G has to be unified
+up to commutativity of cunjunction, and that heigen variables have to
+be unified as in equivariate unification (i.e. an injective map).
+
+For example,
+
+
+\begin{verbatim}
+goal> of (lam a\ lam pa\ P a pa) (arr (sort I) a\ arr a _\ a),
+      of (lam a\ lam pa\ P a pa) (arr (sort J) a\ arr a _\ a).
+\end{verbatim}
+
+generates 2 suspended goals
+
+\begin{verbatim}
+of x (sort I), of y x ?- of (P x y) x
+of w (sort J), of z w ?- of (P w z) w
+\end{verbatim}
+
+........
+
 of course one would like G to be compared like that
 
 \begin{verbatim}
 constraint of {
-  map2 _ [] [].
-  map2 F [X|XS] [Y|YS] :- F X Y, map2 F XS YS.
+  map _ [] [].
+  map F [X|XS] [Y|YS] :- F X Y, map F XS YS.
   conv-of (of X T1) (of X T2) :- conv T1 T2.
 
   rule (nabla xv\ G2 xv ?- of (X xv) T1)
      \ (nabla yv\ G2 yv ?- of (X yv) T2)
      > (xv ~ yv)
    % after that point, G1 G2 T1 T2 are aligned on the names
-   % and G1 G2 are sorted accordingly (or map2 is made more complex)
-     | (pi zv\ map2 conv-of (G1 zv) (G2 zv))
+   % and G1 G2 are sorted accordingly (or map is made more complex)
+     | (pi zv\ map conv-of (G1 zv) (G2 zv))
      <=> (nabla zv\ G1 zv ?- conv T1 T2).
 }
 \end{verbatim}
