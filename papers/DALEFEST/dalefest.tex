@@ -280,7 +280,7 @@ observation that the third layer of an ITP, the ones of tactics, is
 better implemented on a language where backtracking is naturally
 implemented and controlled.
 
-Approach: SEMI SHALLOW EMBEDDING.
+$\lambda$Prolog already has existentially quantified metavariables and the related operations. Therefore, in order to satisfy requirement 1 it seems sufficient to use a shallow embedding of the syntax: the metavariables of the partial terms are directly encoded as metavariables of $\lambda$Prolog, similarly to how binders are encoded via the $\lambda$-abstractions of $\lambda$Prolog. Does this idea work out of the box? Unfortunately not at all.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{$\lambda$Prolog meets partial terms: problems}
@@ -318,22 +318,19 @@ the system to remember to BBBBBBBBBB that corresponds to the new proof
 obligation CCCC.
 
 This is not a problem specific of $\lambda$Prolog, also Prolog has it.
-Indeed all modern Prolog engine provide a \verb+var/1+ built-in
+Indeed all modern Prolog engines provide a \verb+var/1+ built-in
 to test/guard predicates against flexible input, provide one/many
-variants of \verb+delay/2+ to suspend a goal, provide modes
-declarations to both statically/dynamically detect problematic
-calls.
+variants of \verb+delay/2+ to suspend a goal until the input becomes rigid, and
+provide modes declarations to both statically/dynamically detect problematic calls to be (semi)automatically delayed. These mechanisms, however, have never been standardized.
 
-Another issue is when \verb-(J is I + 1)- or \verb+I <= J+ 
-is run on a flexible
-\verb+I+.  For this kind of situations Prolog is typically augmented
-with constraint solvers (CLP).  These also propagate, i.e. 
-\verb-I <= J < I + 1- would fix \verb+J+, while \verb+I < I+ would
-cause failure and backtracking.
+For example, by using the \verb+delay+ pack of SWI-Prolog~\cite{???}, the goal \verb+plus(X,1,Y)+ is delayed until either \verb+X+ or \verb+Y+ are instantiated.
+Delayed goals can be thought as \emph{constraints} over the metavariables occurring in them. In the example above, the programmer is imposing a constraint between \verb+X+ and \verb+Y+.
 
-The most general framework to describe this class of ??? is CHR.
+In many situations, the constraints that accumulate over a metavariable are not independent and sets of constraints can be rewritten in order to simplify them. Rewriting a set of constraints is called \emph{constraint propagation} and the programming languages that allow the user to declare constraints and that propagate them are called \emph{Constraint Programming Languages} (CLPs). For example, the set $\{0 <= N <= 4, 2 <= N <= 5\}$ can be rewritten into $\{2 <= N <= 4\}$ without changing the set of ground solutions.
 
-explain CHR in 1st order here: \verb+\+ removes, \verb+<=>+ adds
+Most CLPs do not allow the user to define new constraints and propagation rules in user space. A notable exception is the first order language CHR~\cite{chr}. In CHR the user declares predicates and then gives a set of rewriting rules of the form $S_1 \setminus S_2 \iff G~|~S_3$ whose declarative semantics is that
+$\big\wedge S_1 \wedge G \Rightarrow (\big\wedge S_2 \iff \big\wedge S_3)$ and whose operational semantics is to match the current set of constraints against both $S_1$ and $S_2$ and, if the clause $G$ holds, replace the constraints in $S_2$ with the ones in $S_3$.
+
 
 \begin{verbatim}
 constraint leq ltn {
