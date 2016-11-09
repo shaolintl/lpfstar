@@ -199,11 +199,11 @@ can be.
 
 The elaborators of the majority of the provers mentioned above are all
 implemented according to the same schema: the syntax of terms is augmented with
-explicitly substituted existential variables (now open-terms)
+explicitly substituted existential variables (called partial terms)
 and the judgements of the kernel are re-implemented from scratch, generalizing
 them to take in account metavariables and elaboration.
 
-In particular one no more works with terms, but always with open terms and
+In particular one no more works with terms, but always with partial terms and
 a metasenv: a data structure assigning to metavariable a typing judgement
 and, eventually, an assignment.
 
@@ -235,7 +235,7 @@ backtracking. The heuristics, however, are quite ad-hoc and they interact with
 one another in unpredictable ways. Because they are hidden in the code, the
 whole system becomes unpredictable to the user.
 \item[code duplication]
-Given such complexity in the elaborator, and the safety requirements of interactive provers, the kernel of the system is kept simple by making it unaware of open terms.  As a consequence a lot of code is duplicated, and
+Given such complexity in the elaborator, and the safety requirements of interactive provers, the kernel of the system is kept simple by making it unaware of partial terms.  As a consequence a lot of code is duplicated, and
 the elaborator ends up being a very complicated \emph{twin brother of the
 kernel} (Huet's terminology).
 \item[twins' disagreement]
@@ -243,7 +243,7 @@ Worse than that, such twin components need to agree on ground terms.
 Typically a proof term is incrementally built by the elaborator:
 starting from a meta typed
 with the conjecture, the proof commands make progress by instantiating such
-meta with open terms.  Once there are no unresolved meta variables left,
+meta with partial terms.  Once there are no unresolved meta variables left,
 the ground term is checked by the kernel.
 \item[extensibility of the elaborator]
 Finally, the elaborator is the brain of the system, but it is oblivious of the
@@ -274,7 +274,7 @@ the implementation of elaborators. In particular:
 \item The programming language should feature a primitive and powerful
 	notion of  extensibility.  
 	In this way the rules of the kernel should not be re-implemented in the
-	elaborator. On the contrary they could be extended to cover open terms,
+	elaborator. On the contrary they could be extended to cover partial terms,
 	solving the code duplication issue.
 	By following this approach the
 	twins' disagreement problem should become less severe.
