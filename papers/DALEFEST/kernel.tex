@@ -1,3 +1,41 @@
+We build a kernel for CIC modularly, by first developing a kernel for a generic PTS (file \verb+kernel_pts.elpi+) and then extending it with inductive types (file \verb+kernel_inductives.elpi+ that accumulates \verb+kernel_pts.elpi+). In order to use the kernel, ones needs to accumulate it together with another file that implements the PTS rules, like \verb+pts_cc.elpi+ for those of the Calculus of Constructions (CC) or \verb+pts_cc_predicative.elpi+ for those of Luo's ECC.
+
+Terms of a generic PTS are encoded in $\lambda$Prolog in the shallow style of Higher Order Abstract Syntax (also called $\lambda$-tree syntax in~\cite{??}):
+\begin{verbatim}
+kind term *
+type sort universe                       -> term  % sort
+type prod (term -> term)                 -> term  % dependent product
+type abs  (term -> term)                 -> term  % lambda-abstraction
+type appl term -> list term              -> term  % n-ary application
+type abbr term -> term -> (term -> term) -> term  % local declaration (let-in)
+\end{verbatim}
+
+The kernel for a PTS implements two main judgement: the typing judgement \verb-t+step T U- and the conversion judgement \verb-conv+top T1 M T2-. The former verifies if \verb+T+ is well typed, inferring the type \verb+U+ for \verb+T+. The second, depending on the value of the flag \verb+M+, checks if \verb+T1+ is convertible with \verb+T2+ or if \verb+T1+ is a subtype of \verb+T2+ (up to conversion). The latter judgement is called by the former in order to compare types during type-checking. Auxiliary judgements are used freely in the code, like \verb-has+sort T S- that behaves like \verb-t+step T S- but also checks \verb+S+ to be a sort.
+
+The type-checking rules are all non surprising. For example, two of them are:
+\begin{verbatim}
+t+step (abst W F1) (prod W F2) :-
+  has+sort W _S1,
+ pi x\ t+step x W => (t+step (F1 x) (F2 x)).
+
+t+step (sort S1) (sort S2) :- pts+pair S1 S2.
+\end{verbatim}
+
+The former rule type-checks $\lambda$-abstractions via dependent products, assuming the PTS to be full. XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+The latter delegates the type-checking of a sort \verb+S1+ to the PTS implementation by calling the \verb-pts+pair S1 S2- predicate, that will be populated in the files that implement the various PTSs.
+
+The rules to check if two terms are convertible are more interesting, because they implement a reduction machine similar to a KAM, but for call-by-need (YYYYYYYYYYYYYY citare papero CSC e Accattoli):
+\begin{verbatim}
+conv+top T1 M T2 :- conv+main T1 [] M T2 [].
+
+conv+main T1 P1 M T2 P2 :- whd+l+delta T1 P1 (red+whnf T2 P2 M)
+\end{verbatim}
+
+
+====================================================
+PER FERRUCCIO: STO LAVORANDO QUI SOPRA, SOTTO E' ROBA TUA
+====================================================
+
 A kernel for CIC must define two main relations on CIC terms:
 \verb+type_step T U+
 asserting that \verb+U+ is an inferred type of \verb+T+,
