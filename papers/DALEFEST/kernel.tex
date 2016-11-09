@@ -27,14 +27,14 @@ $\lambda$Prolog engine, instead of defining our own environment explicitly.
 The environment must maintain the expected type of constants and variables,
 as well as their $\delta$-expansion when appropriate.
 At the moment, we take the data on global constants from the
-enviroment of the Matita ITP, with which we interface the extended
+environment of the Matita ITP, with which we interface the extended
 component of our kernel. XXXXXXXXXX
 
 \end{itemize}
 
 Conversion is asserted by levels by the predicate \verb+conv_whnf U1 U2+,
 that expects \verb+U1+ and \verb+U2+ in weak head normal form (WHNF).
-Of course a metavariable optionally applied to arguments is an open
+Of course a metavariable optionally applied to arguments is a partial
 term in WHNF, so an elaborator can introduce unification as a
 generalization of conversion, just by extending this specific predicate.
 
@@ -42,12 +42,12 @@ Inference of a type \verb+U+ for \verb+T+ is directed by the syntax of \verb+T+
 according to the aforementioned predicate \verb+type_step T U+.
 When \verb+T+ is the application of \verb+T0+ to some arguments,
 and given \verb+type_step T0 U0+,
-we check these arguments agaist the $\Pi$-abstractions (i.e. the
+we check these arguments against the $\Pi$-abstractions (i.e. the
 universal quantifications) arising from \verb+U0+ after reduction to
 WHNF by levels. Here, we traverse each quantification by issuing a $\Pi$-reduction
 (i.e. the equivalent of a $\beta$-reduction on a $\Pi$).
 
-The responibility of this check lies with the predicate \verb+whd_pi U0 U+,
+The responsibility of this check lies with the predicate \verb+whd_pi U0 U+,
 by which we compute the outcome \verb+U+ after the quantifications of
 \verb+U0+ are traversed. Indeed \verb+U+ is an inferred type for \verb+T+.
 
