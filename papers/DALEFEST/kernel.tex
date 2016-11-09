@@ -31,3 +31,36 @@ enviroment of the Matita ITP, with which we interface the extended
 component of our kernel. XXXXXXXXXX
 
 \end{itemize}
+
+Conversion is asserted by levels by the predicate \verb+conv_whnf U1 U2+,
+that expects \verb+U1+ and \verb+U2+ in weak head normal form (WHNF).
+Of course a metavariable optionally applied to arguments is an open
+term in WHNF, so an elaborator can introduce unification as a
+generalization of conversion, just by extending this specific predicate.
+
+Inference of a type \verb+U+ for \verb+T+ is directed by the syntax of \verb+T+
+according to the aforementioned predicate \verb+type_step T U+.
+When \verb+T+ is the application of \verb+T0+ to some arguments,
+and given \verb+type_step T0 U0+,
+we check these arguments agaist the $\Pi$-abstractions (i.e. the
+universal quantifications) arising from \verb+U0+ after reduction to
+WHNF by levels. Here, we traverse each quantification by issuing a $\Pi$-reduction
+(i.e. the equivalent of a $\beta$-reduction on a $\Pi$).
+
+The responibility of this check lies with the predicate \verb+whd_pi U0 U+,
+by which we compute the outcome \verb+U+ after the quantifications of
+\verb+U0+ are traversed. Indeed \verb+U+ is an inferred type for \verb+T+.
+
+If an application has an unknown type \verb+X+,
+an elaborator may extend this predicate to guess the quantifications
+that must occur in \verb+X+ on the basis of the application's arguments.
+
+The elaborator may as well extend the predicate \verb+type_step T U+
+in order to handle the situations in which
+the expected type of a metavariable \verb+T+ is known.
+
+Finally, note that we issue both $\beta$-reductions and $\Pi$-reductions
+by adding an explicit substitution to the context in which computation occurs.
+As we issue this substitution lazily,
+our kernel does not need the ``copying'' predicate on terms
+(following the terminology of $\lambda$Prolog).
