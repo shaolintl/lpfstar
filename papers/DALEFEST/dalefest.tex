@@ -195,111 +195,131 @@ ultimately produce partial proof terms that are elaborated. The more
 advanced is the elaborator, the simpler the code implementing tactics
 can be.
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\paragraph{State of the art in implementation of elaborators.}
+\subsection{Implementing an elaborator: state of the art}  %%%%%%
 
 The elaborators of the majority of the provers mentioned above are all
-implemented according to the same schema: the syntax of terms is
-augmented with explicitly substituted existential variables; the
-judgements of the kernel are re-implemented from scratch, generalizing
-them to take in account metavariables and elaboration. In particular:
-reduction acts on metavariables too; conversion becomes narrowing,
-i.e. higher order unification under a mixed prefix~\cite{???} in
-presence of rewriting rules; unification requires metavariable
-instantiation, that is implemented lazily for efficiency; type
-checking is generalized to elaboration, for example by replacing all
-calls to conversion with calls to narrowing and by threading around a
-new environment for the signature of metavariables.
+implemented according to the same schema: the syntax of terms is augmented with
+explicitly substituted existential variables (now open-terms)
+and the judgements of the kernel are re-implemented from scratch, generalizing
+them to take in account metavariables and elaboration.
 
-The approach is sub-optimal in many ways:
-\begin{enumerate}
-\item A lot of code is duplicated with the kernel.
-\item A lot of code is essentially logic independent, but it needs to
-	be implemented again for every system: mostly code that deals
-	with binders ($\alpha$-conversion, capture avoiding
-	substitution, renaming) and code that deals with existentially
-	quantified metavariables (explicit substitution management,
-	name capturing instantiation, higher order unification under a
-	mixed prefix).
-\item There is no guarantee that elaborated terms will be actually
-	accepted by the kernel.
-\item Most of the problems tackled, like higher order unification, are
-	only semi-decidable. For efficiency reasons a lot of
-	incomplete heuristics are implemented to speed up the system
-	and reduce backtracking. The heuristics, however, are quite
-	ad-hoc and they interact with one another in unpredictable
-	ways. Because they are hidden in the code, the whole system
-	becomes unpredictable to the user, unless an heavy layer is
-	put around the elaborator to recover predicibility by reducing
-	the invocations of the elaborator (cfr.~\cite{SOZEAU?}).
-\item The elaborator is the brain of the system, but it is oblivious
-	of the pragmatic ways to use the knowledge in the prover
-	library, e.g. to automatically fill in
-	gaps~\cite{mathcomponents}, to coerce data from one type to
-	another~\cite{coercivesubtyping} or to enrich data to resolve
-	mathematical abuse of
-	notation~\cite{nonuniformunificationhints}. Therefore the
-	recent trend is to let the user drive the behaviour of the
-	elaborator in user space by writing pieces of declarative code
-	in disguise that are integrated in the core algorithm. The
-	languages to write this code are obviously high level, hiding
-	the user from the intricacies of representation of bound
-	variables, metavariables, etc. The overall program logic is
-	therefore splitted in multiple languages, defying the hope for
-	static analysis and predictability.
-\end{enumerate}
+In particular one no more works with terms, but always with open terms and
+a metasenv: a data structure assigning to metavariable a typing judgement
+and, eventually, an assignment.
 
-\paragraph{Motivations and approach}
+All algorithms manipulating terms are extended to open
+terms, in particular conversion (implemented by the 
+\verb+sub+  and \verb+conv+ predicates in the running example)
+becomes narrowing, i.e. higher order unification under a
+mixed prefix~\cite{???} in presence of rewriting rules.
+Unification requires metavariable instantiation, that is
+implemented lazily for efficiency.  Type checking \verb+of+ is generalized to
+elaboration, for example by replacing all calls to conversion with calls to
+narrowing and by threading around the metasenv.
 
-The motivation of our research is to try to improve over the latter
-issues by identifying an high level (logic) programming language as
-general as possible, but suitable at least for the implementation of
-elaborators. In particular:
+The approach is sub-optimal in many ways.  We here identify the main problems
+in the state of the art.
+
+\begin{description}
+\item[programming platform]
+Much of this new code has very little to do with the prover or the implemented
+logic. In particular code that deals with binders ($\alpha$-conversion,
+capture avoiding substitution, renaming) and code that deals with existentially
+quantified metavariables (explicit substitution management, name capturing
+instantiation).
+\item[intricacy of algorithms]
+Such code is far from being trivial, since it tackles problems that, like
+higher order unification, are only semi-decidable. For efficiency reasons a lot
+of incomplete heuristics are implemented to speed up the system and reduce
+backtracking. The heuristics, however, are quite ad-hoc and they interact with
+one another in unpredictable ways. Because they are hidden in the code, the
+whole system becomes unpredictable to the user.
+\item[code duplication]
+Given such complexity in the elaborator, and the safety requirements of interactive provers, the kernel of the system is kept simple by making it unaware of open terms.  As a consequence a lot of code is duplicated, and
+the elaborator ends up being a very complicated \emph{twin brother of the
+kernel} (Huet's terminology).
+\item[twins' disagreement]
+Worse than that, such twin components need to agree on ground terms.
+Typically a proof term is incrementally built by the elaborator:
+starting from a meta typed
+with the conjecture, the proof commands make progress by instantiating such
+meta with open terms.  Once there are no unresolved meta variables left,
+the ground term is checked by the kernel.
+\item[extensibility of the elaborator]
+Finally, the elaborator is the brain of the system, but it is oblivious of the
+pragmatic ways to use the knowledge in the prover library, e.g.  to
+automatically fill in gaps~\cite{mathcomponents}, to coerce data from one type
+to another~\cite{coercivesubtyping} or to enrich data to resolve mathematical
+abuse of notation~\cite{nonuniformunificationhints}. Therefore systems provide
+ad-hoc extension points to extend the capabilities of the elaborator.  The
+languages to write this code are typically high level, delarative programs,
+that hide the user from the intricaces of bound variables, metavariables, etc.
+The global algorithm is therefore split in multiple languages, defying the hope
+for static analysis, documentation, and sometimes predictability.
+\end{description}
+
+\subsection{The proposed approach: semi shallow embedding}
+
+The motivation of our research is to try to improve over the latter issues.  We
+propose to identifying an high level (logic) programming language suitable for
+the implementation of elaborators. In particular:
 \begin{enumerate}
 \item The programming language should take care of representation of
-	bindings and metavariables, and implement all related basic
-	operations. This would solve issues 2) and 5) above, allowing
+	bindings \emph{and metavariables} in the spirit of semi shallow embedding~\cite{Dunchev:2016:IHH:2966268.2966272}.
+	This would solve the platform issue.
+	It would also improve on extensibility  issues by allowing
 	both the core implementors and the users to work on the same,
 	high level code.
-\item Issue 3) should become less severe, because the now high level
-	code would be inspectable by the user that could also replace
-	it in case of need.
-\item The rules of the kernel should not be re-implemented in the
-	elaborator. On the contrary, and in the usual spirit of logic
-	programming, it should be possible to implement the
-	accumulator by adding rules to the kernel. Moreover, the
+	Finally the intricacy of elaboration would be mitigated.
+\item The programming language should feature a primitive and powerful
+	notion of  extensibility.  
+	In this way the rules of the kernel should not be re-implemented in the
+	elaborator. On the contrary they could be extended to cover open terms,
+	solving the code duplication issue.
+	By following this approach the
+	twins' disagreement problem should become less severe.
+	Also the extensibility of the elaborator would be less ad-hoc.
+\item Finally the
 	language should make it easy to prove that the additional
 	rules grant that the elaborated terms are well-typed according
-	to the core set of rules of the kernel.
+	to the core set of rules of the kernel.  This would completely
+	solve the twins' disagreement problem, making it possible to
+	eventually merge the kernel and the elaborator.
 \end{enumerate}
 
-The requirement for the language to be a logic one is motivated both
-by our hope to reuse or at least extend $\lambda$Prolog and by the
-observation that the third layer of an ITP, the ones of tactics, is
-better implemented on a language where backtracking is naturally
-implemented and controlled.
+We envisage such language to be a logic one for two reasons:
+first we hope to reuse or at least extend $\lambda$Prolog;
+second we observe that the third layer of an ITP, the ones of proof commands,
+is better implemented on a language where backtracking is built in, in
+particular when proof commands perform proof search.
 
-$\lambda$Prolog already has existentially quantified metavariables and the related operations. Therefore, in order to satisfy requirement 1 it seems sufficient to use a shallow embedding of the syntax: the metavariables of the partial terms are directly encoded as metavariables of $\lambda$Prolog, similarly to how binders are encoded via the $\lambda$-abstractions of $\lambda$Prolog. Does this idea work out of the box? Unfortunately not at all.
+$\lambda$Prolog already has existentially quantified metavariables and the
+related operations. Therefore, in order to satisfy requirement 1) it seems
+sufficient to use a shallow embedding of the syntax: 
+\emph{the metavariables of the
+partial terms are directly encoded as metavariables of $\lambda$Prolog},
+similarly to how binders are encoded via the $\lambda$-abstractions of
+$\lambda$Prolog. 
+
+Does this idea work out of the box? Unfortunately not at all.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{$\lambda$Prolog meets partial terms: problems}
+\section{$\lambda$Prolog meets partial terms}
 
-
-\paragraph{Failure of $\lambda$Prolog as an high level language for
-implementing elaborators.}
 We already know from~\cite{jlp98} that $\lambda$Prolog is the minimal
 extension of Prolog that allows to implement inductive predicates over
 syntax containing binders. Does it work when applied to data that is
 meant to containt existentially quantified metavariables too?
 
 Consider the $\lambda$-term \verb+(lam a\ P a)+ that encodes a
-partial proof of $\forall A, A -> A$.
+partial proof of $\forall A, A \to A$.
 If we run the following query, the computation diverges:
 
 \begin{verbatim}
 goal> of (lam a\P a) (arr (sort i) a\ arr a _\ a)
 \end{verbatim}
+
+\subsection{Generative semantics and constraint declaration} %%%%%%%%%%%
 
 Indeed, \verb+P+ is flexible and the \verb+of (app M N) ..+
 rule applies indefinitely.
@@ -317,68 +337,121 @@ instantiated. In the example above, type-checking AAAAAAAAAA forces
 the system to remember to BBBBBBBBBB that corresponds to the new proof
 obligation CCCC.
 
-This is not a problem specific of $\lambda$Prolog, also Prolog has it.
-Indeed all modern Prolog engines provide a \verb+var/1+ built-in
-to test/guard predicates against flexible input, provide one/many
-variants of \verb+delay/2+ to suspend a goal until the input becomes rigid, and
-provide modes declarations to both statically/dynamically detect problematic calls to be (semi)automatically delayed. These mechanisms, however, have never been standardized.
+This is not a problem specific of $\lambda$Prolog, also Prolog has it.  Indeed
+all modern Prolog engines provide a \verb+var/1+ built-in to test/guard
+predicates against flexible input, provide one/many variants of \verb+delay/2+
+to suspend a goal until the input becomes rigid, and provide modes declarations
+to both statically/dynamically detect problematic calls to be
+(semi)automatically delayed. These mechanisms, however, have never been
+standardized.
 
-For example, by using the \verb+delay+ pack of SWI-Prolog~\cite{???}, the goal \verb+plus(X,1,Y)+ is delayed until either \verb+X+ or \verb+Y+ are instantiated.
-Delayed goals can be thought as \emph{constraints} over the metavariables occurring in them. In the example above, the programmer is imposing a constraint between \verb+X+ and \verb+Y+.
+For example, by using the \verb+delay+ pack of SWI-Prolog~\cite{???}, the goal
+\verb+plus(X,1,Y)+ is delayed until either \verb+X+ or \verb+Y+ are
+instantiated.  Delayed goals can be thought as \emph{constraints} over the
+metavariables occurring in them. In the example above, the programmer is
+imposing a constraint between \verb+X+ and \verb+Y+.
 
-In many situations, the constraints that accumulate over a metavariable are not independent and sets of constraints can be rewritten in order to simplify them. Rewriting a set of constraints is called \emph{constraint propagation} and the programming languages that allow the user to declare constraints and that propagate them are called \emph{Constraint Programming Languages} (CLPs). For example, the set $\{0 <= N <= 4, 2 <= N <= 5\}$ can be rewritten into $\{2 <= N <= 4\}$ without changing the set of ground solutions.
+One could imagine to provide
 
-Most CLPs do not allow the user to define new constraints and propagation rules in user space. A notable exception is the first order language CHR~\cite{chr}. In CHR the user declares predicates and then gives a set of rewriting rules of the form $S_1 \setminus S_2 ~|~ G \iff S_3$ whose declarative semantics is that
-$\bigwedge S_1 \wedge G \Rightarrow (\bigwedge S_2 \iff \bigwedge S_3)$ and whose operational semantics is to match the current set of constraints against both $S_1$ and $S_2$ and, if the clause $G$ holds, replace the constraints in $S_2$ with the ones in $S_3$. All syntactic components can be omitted: $G$ defaults ot \verb+true+ and the sets $S_1,S_2,S_3$ to the emptyset. The $\iff$ symbol is also omitted when $S_3$ is, and $|$ is omitted when $G$ is. The semantics of the language is completed by a strategy that fixes the order in which propagation rules are fired and in what cases propagation rules can be backtracked. Multiple such semantics for CHR have been proposed.
-
-For example, the rules for type-checking ECC call the predicates \verb+<,max,succ+ over integers. The corresponding elaborator may be faced with sorts like \verb+sort M+ where \verb+M+ is a metavariable. The elaborator is asked to compute a suitable assignment to the metavariables that respects all constraints. Without breaking consistency, the successor predicate can be relaxed to a strictly less than, the max to a generic upper bound and the set of integers to an unspecified partial order, de facto replacing the predicates \verb+<,max,succ+ with generic predicates \verb+leq,ltn+ (lax and strict inequality over an unspecified set). Finally, the two predicates, once turned into constraints, admit the following complete set of CHR propagation rules able to detect strict cicles that correspond to unsatisfiability of the constraints.
-
-\label{chruniverses}
 \begin{verbatim}
-succ I J :- ltn I J.
-I < J :- ltn I J.
-max I J K :- leq I K, leq J K.
-
-constraint leq ltn {
-  % incompatibility
-  rule (leq X Y) (ltn Y X) <=> false.
-  rule (ltn X Y) (ltn Y X) <=> false.
-  rule (ltn X X) <=> false.
-  
-  % reflexivity
-  rule \ (leq X X).
-
-  % antisymmetry
-  rule (leq X Y) \ (leq Y X) <=> (Y = X).
-
-  % transitivity
-  rule (leq X Y) (leq Y Z) <=> (leq X Z).
-  rule (leq X Y) (ltn Y Z) <=> (ltn X Z).
-  rule (ltn X Y) (leq Y Z) <=> (ltn X Z).
-  rule (ltn X Y) (ltn Y Z) <=> (ltn X Z).
-
-  % idempotence
-  rule (leq X Y) \ (leq X Y).
-  rule (ltn X Y) \ (ltn X Y).
-}
+delay (of X T) on X.
 \end{verbatim}
+
+and end up with the following suspended goal
+
+\begin{verbatim}
+of x (sort I) ?- of (P x) (arr x _\ x)
+\end{verbatim}
+
+that is a sort of constraint on \verb+P+ : when it gets instantiated
+the goal is resumed and the assigned term is checked to fix the type.
+
+Extending lp with delay could make it possible to represent the metasenv (as
+delayed constraints) and avoid the generative semantic on predicates that, like
+\verb+of+ are not generative.
+
+\subsection{Meta theory and constraint Propagation} %%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In many situations, the constraints that accumulate over a metavariable are not independent and sets of constraints can be rewritten in order to simplify them.
+
+For example, if \verb+P+ does not occur linearly, one could end up with
+two distinct constraints it:
+
+\begin{verbatim}
+of x (sort I) ?- of (P x) (arr x _\ x)
+of x (sort J) ?- of (P x) (arr (T x) y\ S x y)
+\end{verbatim}
+
+If the object language features uniqueness of typing, one surely wants to
+get rid of the second constraint, and force \verb+T = a\ a+,
+\verb+S = a\ b\ a+, and \verb+J = I+.
+This way, when \verb+P+ gets instantiated only one goal is resumed and hence
+its assigned term is checked only once.  In addition to that, when the
+set of constraints is unsatisfiable one want to fail, and eventually backtrack.
+
+In standard LP, rewriting a set of constraints is called \emph{constraint
+propagation} and the programming languages that allow the user to declare
+constraints and that propagate them are called \emph{Constraint Programming
+Languages} (CLPs).  For example, the set $\{0 <= N <= 4, 2 <= N <= 5\}$ can be
+rewritten into $\{2 <= N <= 4\}$ without changing the set of ground solutions.
+
+ Most CLPs do not allow the user to define new constraints and propagation rules in user space. A notable exception is the first order language CHR~\cite{chr}. In CHR the user declares predicates and then gives a set of rewriting rules of the form $S_1 \setminus S_2 ~|~ G \iff S_3$ whose declarative semantics is that
+ $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge S_2 \iff \bigwedge S_3)$ and whose operational semantics is to match the current set of constraints against both $S_1$ and $S_2$ and, if the clause $G$ holds, replace the constraints in $S_2$ with the ones in $S_3$. All syntactic components can be omitted: $G$ defaults ot \verb+true+ and the sets $S_1,S_2,S_3$ to the emptyset. The $\iff$ symbol is also omitted when $S_3$ is, and $|$ is omitted when $G$ is. The semantics of the language is completed by a strategy that fixes the order in which propagation rules are fired and in what cases propagation rules can be backtracked. Multiple such semantics for CHR have been proposed.
+
+
+Adding to lp a CHR system enables
+\begin{itemize}
+\item forward reasoning (i.e. propagations are thms)
+\item model the optimizations given by the meta 
+  theory of the object language (uniq of typing)
+\item naturally relax checking into inference, for example the
+the predicates \verb+<,max,succ+ with generic predicates \verb+leq,ltn+ (lax and strict inequality over an unspecified set).
+\end{itemize}
 
 Implementing in $\lambda$Prolog the part of the elaborator for ECC that deals with universe constraints is much harder and less elegant than the previous approach based on CHR. Indeed, the only solution is to keep an explicit list of constraints that become a third argument of the type-checking judgement and that needs to be threaded around the program, polluting the code and not allowing to reuse the type-checking code for the elaborator. Moreover, every time an additional constraint is added to the list, some special predicate to fire the propagation rules according to some strategy needs to be called, de facto forcing the user to implement the boilerplate code for constraint propagation.
 
-Motivated by the observations in this section, we implemented a new, efficient~\cite{???} interpreter for $\lambda$Prolog, called \emph{ELPI} (Embedded Lambda Prolog Interpreter) and we augmented the language with the possibility to delay arbitrary predicates turning them into constraints, and to propagate constraints using CHR style rewriting rules and additional mechanisms.
-
-The language implemented by ELPI is described in Section~\ref{sec:elpi}.
-In addition to the new programming constructs that deal with constraints, it slightly differs from the version of $\lambda$Prolog implemented in Teyjus in a few minor aspects:
-\begin{itemize}
-\item In ELPI all types and type and sort declarations can be omitted, whereas they are mandatory in Teyjus. Originally, and according to~\cite{jlp98}, types were necessary to implement Huet's algorithm for higher order unification. However, for several years now the unification algorithm of Teyjus only solves equations in the pattern fragment discovered by Miller~\cite{patternfrag}, which admits most general unifiers and reduce unification to a decidable problem. All other equations are automatically delayed by Teyjus to be fired only when the equation is instantiated to one in the pattern fragment. At the level of the implementation, the code of ELPI that implements this delay is shared with the one to delay arbitrary predicates.
-\item The module system of Teyjus is not implemented. Only the \verb+accumulate+ directive is honored for backward compatibility and with a different semantics. In ELPI we provide instead explicit existentially quantified local constants whose scope spans over a set of program clauses. This mechanism gives in a simple way predicate and constructor hiding that are provided differently by the module system of Teyjus.
-\item In a few corner cases, the parsing of an expression by Teyjus is influenced by the types. In particular, types are used to disambiguate between lists of elements and a singleton list of conjunctions. The syntax is disambiguated in a different way in ELPI.
-\end{itemize}
-
-Despite the differences above, we tried very hard to maintain backward compatibility with Teyjus and its standard library. Indeed, we are able to execute in ELPI all the code from Teyjus that we collected from the Web, up to a very few minor changes to the source code, mostly due to 2 and 3.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{ELPI = $\lambda$Prolog + (HO)CHR}\label{sec:elpi}
+
+Motivated by the observations in the previous section, we implemented a new,
+efficient~\cite{elpiLPAR} interpreter for $\lambda$Prolog, called \emph{ELPI}
+(Embedded Lambda Prolog Interpreter) and we augmented the language with the
+possibility to delay arbitrary predicates turning them into constraints, and to
+propagate constraints using CHR style rewriting rules and additional
+mechanisms.
+
+In addition to the new programming constructs that deal with constraints, it
+slightly differs from the version of $\lambda$Prolog implemented in Teyjus in a
+few minor aspects:
+\begin{itemize}
+\item In ELPI all types and type and sort declarations can be omitted, whereas
+	they are mandatory in Teyjus. Originally, and according
+	to~\cite{jlp98}, types were necessary to implement Huet's algorithm for
+	higher order unification. However, for several years now the
+	unification algorithm of Teyjus only solves equations in the pattern
+	fragment discovered by Miller~\cite{patternfrag}, which admits most
+	general unifiers and reduce unification to a decidable problem. All
+	other equations are automatically delayed by Teyjus to be fired only
+	when the equation is instantiated to one in the pattern fragment. At
+	the level of the implementation, the code of ELPI that implements this
+	delay is shared with the one to delay arbitrary predicates.
+\item The module system of Teyjus is not implemented. Only the
+	\verb+accumulate+ directive is honored for backward compatibility and
+	with a different semantics. In ELPI we provide instead explicit
+	existentially quantified local constants whose scope spans over a set
+	of program clauses. This mechanism gives in a simple way predicate and
+	constructor hiding that are provided differently by the module system
+	of Teyjus.
+\item In a few corner cases, the parsing of an expression by Teyjus is
+	influenced by the types. In particular, types are used to disambiguate
+	between lists of elements and a singleton list of conjunctions. The
+	syntax is disambiguated in a different way in ELPI.
+\end{itemize}
+
+Despite the differences above, we tried very hard to maintain backward
+compatibility with Teyjus and its standard library. Indeed, we are able to
+execute in ELPI all the code from Teyjus that we collected from the Web, up to
+a very few minor changes to the source code, mostly due to 2 and 3.
 
 \subsection{incomplete terms, delay}
 
@@ -581,7 +654,41 @@ copy X Y :- $is_name X, X = Y, !.
 copy X Y :- $is_name X, r+step X T _, !, copy T Y.
 copy (sort _ as C) C :- !.
 copy (appl X1 L1) (appl X2 L2) :- copy X1 X2, $print "UU", map copy L1 L2.
+\end{verbatim}
 
+\subsection{universes}
+
+
+For example, the rules for type-checking ECC call the predicates \verb+<,max,succ+ over integers. The corresponding elaborator may be faced with sorts like \verb+sort M+ where \verb+M+ is a metavariable. The elaborator is asked to compute a suitable assignment to the metavariables that respects all constraints. Without breaking consistency, the successor predicate can be relaxed to a strictly less than, the max to a generic upper bound and the set of integers to an unspecified partial order, de facto replacing the predicates \verb+<,max,succ+ with generic predicates \verb+leq,ltn+ (lax and strict inequality over an unspecified set). Finally, the two predicates, once turned into constraints, admit the following complete set of CHR propagation rules able to detect strict cicles that correspond to unsatisfiability of the constraints.
+
+\label{chruniverses}
+\begin{verbatim}
+succ I J :- ltn I J.
+I < J :- ltn I J.
+max I J K :- leq I K, leq J K.
+
+constraint leq ltn {
+  % incompatibility
+  rule (leq X Y) (ltn Y X) <=> false.
+  rule (ltn X Y) (ltn Y X) <=> false.
+  rule (ltn X X) <=> false.
+  
+  % reflexivity
+  rule \ (leq X X).
+
+  % antisymmetry
+  rule (leq X Y) \ (leq Y X) <=> (Y = X).
+
+  % transitivity
+  rule (leq X Y) (leq Y Z) <=> (leq X Z).
+  rule (leq X Y) (ltn Y Z) <=> (ltn X Z).
+  rule (ltn X Y) (leq Y Z) <=> (ltn X Z).
+  rule (ltn X Y) (ltn Y Z) <=> (ltn X Z).
+
+  % idempotence
+  rule (leq X Y) \ (leq X Y).
+  rule (ltn X Y) \ (ltn X Y).
+}
 \end{verbatim}
 
 
