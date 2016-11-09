@@ -199,7 +199,7 @@ can be.
 
 The elaborators of the majority of the provers mentioned above are all
 implemented according to the same schema: the syntax of terms is augmented with
-explicitly substituted existential variables (called partial terms)
+explicitly substituted existential variables
 and the judgements of the kernel are re-implemented from scratch, generalizing
 them to take in account metavariables and elaboration.
 
@@ -241,21 +241,22 @@ kernel} (Huet's terminology).
 \item[twins' disagreement]
 Worse than that, such twin components need to agree on ground terms.
 Typically a proof term is incrementally built by the elaborator:
-starting from a meta typed
-with the conjecture, the proof commands make progress by instantiating such
+starting from a meta variable that has the type of
+the conjecture the proof commands make progress by instantiating such
 meta with partial terms.  Once there are no unresolved meta variables left,
-the ground term is checked by the kernel.
+the ground term is checked, again and in its totality, by the kernel.
+Bugs in the elaborator are detected by the kernel, letting the user 
 \item[extensibility of the elaborator]
 Finally, the elaborator is the brain of the system, but it is oblivious of the
 pragmatic ways to use the knowledge in the prover library, e.g.  to
 automatically fill in gaps~\cite{mathcomponents}, to coerce data from one type
 to another~\cite{coercivesubtyping} or to enrich data to resolve mathematical
 abuse of notation~\cite{nonuniformunificationhints}. Therefore systems provide
-ad-hoc extension points to extend the capabilities of the elaborator.  The
-languages to write this code are typically high level, delarative programs,
-that hide the user from the intricaces of bound variables, metavariables, etc.
+ad-hoc extension points to increase the capabilities of the elaborator.  The
+languages to write this code are typically high level, declarative, and
+try to hide the intricaces of bound variables, metavariables, etc. to the user.
 The global algorithm is therefore split in multiple languages, defying the hope
-for static analysis, documentation, and sometimes predictability.
+for static analysis and documentation of the elaborator.
 \end{description}
 
 \subsection{The proposed approach: semi shallow embedding}
@@ -264,44 +265,50 @@ The motivation of our research is to try to improve over the latter issues.  We
 propose to identifying an high level (logic) programming language suitable for
 the implementation of elaborators. In particular:
 \begin{enumerate}
-\item The programming language should take care of representation of
-	bindings \emph{and metavariables} in the spirit of semi shallow embedding~\cite{Dunchev:2016:IHH:2966268.2966272}.
-	This would solve the platform issue.
-	It would also improve on extensibility  issues by allowing
+\item The programming language takes care of the representation of
+	\emph{bindings and metavariables} in the spirit of semi
+	shallow embedding~\cite{Dunchev:2016:IHH:2966268.2966272},
+	solving the \textbf{programming platform} issue.
+	It also improves on \textbf{extensibility} by allowing
 	both the core implementors and the users to work on the same,
 	high level code.
-	Finally the intricacy of elaboration would be mitigated.
-\item The programming language should feature a primitive and powerful
-	notion of  extensibility.  
-	In this way the rules of the kernel should not be re-implemented in the
-	elaborator. On the contrary they could be extended to cover partial terms,
-	solving the code duplication issue.
-	By following this approach the
-	twins' disagreement problem should become less severe.
-	Also the extensibility of the elaborator would be less ad-hoc.
-\item Finally the
-	language should make it easy to prove that the additional
-	rules grant that the elaborated terms are well-typed according
-	to the core set of rules of the kernel.  This would completely
-	solve the twins' disagreement problem, making it possible to
-	eventually merge the kernel and the elaborator.
+	Finally the \textbf{intricacy of elaboration} is be mitigated.
+\item The programming language features a primitive and powerful
+	notion of extensibility: programs are organized into clauses,
+	and new clauses can be freely added.
+	In this way the rules of the kernel are not be re-implemented in the
+	elaborator. On the contrary they are extended to cover partial terms,
+	solving the \textbf{code duplication} issue.
+	Also, the \textbf{twins' disagreement} problem becomes less severe,
+	since most code is shared.
+	At the same time \textbf{extensibility of the elaborator}
+	become less ad-hoc: the user simply declares new clauses.
+\item Finally the programming language has a clean semantics, making it
+	easy to prove that the extensions to the kernel
+	only accept partial terms that are, once completed,
+	well-typed according
+	to the core set of rules of the kernel.  This completely
+	solve the \textbf{twins' disagreement} problem, making it possible to
+	merge the kernel and the elaborator.
 \end{enumerate}
 
 We envisage such language to be a logic one for two reasons:
 first we hope to reuse or at least extend $\lambda$Prolog;
-second we observe that the third layer of an ITP, the ones of proof commands,
-is better implemented on a language where backtracking is built in, in
-particular when proof commands perform proof search.
+second we observe that another component of each ITP, the one
+implementing proof commands, can take real advantage from a 
+programming language where backtracking is built in, in
+particular to write proof commands performing proof search.
 
-$\lambda$Prolog already has existentially quantified metavariables and the
-related operations. Therefore, in order to satisfy requirement 1) it seems
-sufficient to use a shallow embedding of the syntax: 
-\emph{the metavariables of the
-partial terms are directly encoded as metavariables of $\lambda$Prolog},
-similarly to how binders are encoded via the $\lambda$-abstractions of
-$\lambda$Prolog. 
+The Higher order Abstract Syntax approach identifies the object
+language binders and the meta language ones, obtaining $\alpha$-conversion
+and $\beta$-reduction for free.  The semi shallow embedding we propose
+\emph{identifies the metavariables of the object language with the 
+meta variables of $\lambda$Prolog}.  Indeed such meta variables already
+come with automatic instantiation and context management.
 
-Does this idea work out of the box? Unfortunately not at all.
+At a first sight, the runtime of $\lambda$Prolog seems to already provide
+an implementation of the metasenv data structure, and all related operations.
+Does this idea work out of the box? Unfortunately not quite.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{$\lambda$Prolog meets partial terms}
