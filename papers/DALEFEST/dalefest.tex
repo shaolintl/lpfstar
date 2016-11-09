@@ -323,59 +323,72 @@ partial proof of $\forall A, A \to A$.
 If we run the following query, the computation diverges:
 
 \begin{verbatim}
-goal> of (lam a\P a) (arr (sort i) a\ arr a _\ a)
+goal> of (lam a\P a) (arr (sort I) a\ arr a _\ a)
 \end{verbatim}
 
 \subsection{Generative semantics and constraint declaration} %%%%%%%%%%%
 
-Indeed, \verb+P+ is flexible and the \verb+of (app M N) ..+
+Indeed, \verb+P+ is flexible and the \verb+of (app M N) BN+
 rule applies indefinitely.
 
 Indeed the \verb+of+ predicate inherits from Prolog a generative semantics:
-when called recursively on a flexible input, it blindly enumerates all
+when called recursively on a flexible input, it enumerates all
 instances trying to find the ones that are well typed. Even when proof
 search does not diverge, the behaviour obtained is not the one
 expected from an elaborator for an \emph{interactive} prover: the
 elaborator is not meant to fill in the term, unless the choice is
-obliged. On the contrary, it should leave the metavariable not
-instantiated, but the system should \emph{remember} the need for
+obliged. On the contrary, it should leave the meta variable not
+instantiated and should \emph{remember} the need for
 veryfing if the predicate holds later on, when the metavariable gets
-instantiated. In the example above, type-checking AAAAAAAAAA forces
-the system to remember to BBBBBBBBBB that corresponds to the new proof
-obligation CCCC.
+instantiated. In the example above, type-checking \verb+(lam a\P a)+ forces
+the system to remember that term of type \verb+(arr a _\ a)+ has to be
+provided, that in turn corresponds to the proof obligation
+$A : o \vdash A \to A $.
 
-This is not a problem specific of $\lambda$Prolog, also Prolog has it.  Indeed
-all modern Prolog engines provide a \verb+var/1+ built-in to test/guard
-predicates against flexible input, provide one/many variants of \verb+delay/2+
-to suspend a goal until the input becomes rigid, and provide modes declarations
-to both statically/dynamically detect problematic calls to be
-(semi)automatically delayed. These mechanisms, however, have never been
-standardized.
+This is not a problem specific of $\lambda$Prolog since Prolog behaves the same.
+Nevertheless, all modern Prolog engines provide a \verb+var/1+ built-in to
+test/guard predicates against flexible input, provide one/many variants of
+\verb+delay/2+ to suspend a goal until the input becomes rigid, and provide
+modes declarations to both statically/dynamically detect problematic goals
+and to (semi)automatically delay (suspend) them.
+These mechanisms, however, have never been standardized.
 
-For example, by using the \verb+delay+ pack of SWI-Prolog~\cite{???}, the goal
+For example, by using the \verb+delay+ pack of SWI-Prolog~\cite{SWI}, the goal
 \verb+plus(X,1,Y)+ is delayed until either \verb+X+ or \verb+Y+ are
 instantiated.  Delayed goals can be thought as \emph{constraints} over the
 metavariables occurring in them. In the example above, the programmer is
 imposing a constraint between \verb+X+ and \verb+Y+.
 
-One could imagine to provide
+Going back to our diverging goal, one could imagine to provide a directive
+like
 
 \begin{verbatim}
 delay (of X T) on X.
 \end{verbatim}
 
-and end up with the following suspended goal
+that would delay goals of the form \verb+of X T+ whenever \verb+X+
+is flexible.  As a result, instead of diverging, the running example
+would terminate leaving the following (suspended) goal unsolved:
 
 \begin{verbatim}
 of x (sort I) ?- of (P x) (arr x _\ x)
 \end{verbatim}
 
-that is a sort of constraint on \verb+P+ : when it gets instantiated
-the goal is resumed and the assigned term is checked to fix the type.
+Such suspended goal is to be seen as a typing constraint on
+assignments to \verb+P+: when \verb+P+ gets instantiated by a
+term \verb+t+, the goal \verb+(of (t x) (arr x _\ x))+ is resumed
+hence \verb+t+ is checked to be of type \verb+(arr x _\ x)+.
+In turn such check can either:
+\begin{itemize}
+\item terminate successfully if \verb+t+ has the right type and is ground
+\item fail, rejecting the proposed assignment for \verb+P+.
+\item result in one or more new constraints if \verb+t+ is partial (and the non flexible part of \verb+t+ fits)
+\end{itemize}
+Any of these behavior matches what an elaborator does.
 
-Extending lp with delay could make it possible to represent the metasenv (as
-delayed constraints) and avoid the generative semantic on predicates that, like
-\verb+of+ are not generative.
+Extending lp with delay directive makes it possible to represent the metasenv
+(as the set of delayed typing constraints) and, at the same time, avoiding the
+generative semantics on predicates like \verb+of+ (that should not be as such).
 
 \subsection{Meta theory and constraint Propagation} %%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -496,7 +509,7 @@ as a contraint is added propagation is triggered.
 If we go back to our previous example
 
 \begin{verbatim}
-goal> of (lam a\P a) (arr (sort I) a\ arr a _\ a).
+?- of (lam a\P a) (arr (sort I) a\ arr a _\ a).
 \end{verbatim}
 
 would end with a delayed goal
