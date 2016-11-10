@@ -134,9 +134,8 @@ a predicative hierarchy of sorts we need to add a new term constructor
 and refine the type of \verb+arr+ as follows:
 
 \begin{verbatim}
-lam arr term -> (term -> term) -> term.
+type lam arr term -> (term -> term) -> term.
 type arr term -> (term -> term) -> term.
-
 type sort int -> term.
 \end{verbatim}
 
@@ -175,7 +174,7 @@ of (arr A Bx) (sort K) :-
 
 where \verb+succ+ and \verb+max+ are the predicates governing sorts in
 PTS.  We now have the predicative, universal fragment of Luo's
-ECC~\cite{luo}, wow!
+ECC~\cite{luo}, in 22 lines, wow!
 
 Note that the rules are syntax directed, i.e. with explicit calls to
 \verb+sub+.  The on-paper presentation is more elegant and compact but 
@@ -576,7 +575,8 @@ mode (of i o).
 \end{verbatim}
 
 The result is that arguments marked as input are \emph{matched}
-against the corresponding arguments in the goal.  
+against the corresponding arguments in the goal.  This mean the goal is not
+instantiated.  
 
 \begin{verbatim}
 of (lam T F) T :- ...
@@ -606,111 +606,120 @@ The \verb+t as X+ notation
 is just naming the term \verb+t+, so that one can use it in the right hand
 side of the clause.
 It is worth mentioning that giving a special symbol to denote
-flexible terms enables better indexing: in input mode, flexible arguments don't retrieve(understood by clause indexing, so that the clause is not always found).  
+flexible terms enables better indexing: in input mode the indexing facility
+does not retrieve all clauses when the goal is flexible, only the ones mentioning \verb+??+.
 
 Delayed goals become constraints keyed on the flexible variable
 (\verb+X+ in the example above).  \emph{As soon} as \verb+X+ gets
 instantiated, the delayed goal is resumed.  Symmetrically, as soon
-as a contraint is added propagation is triggered.
+as a constraint is added propagation is triggered (see next section).
 
-If we go back to our previous example
+If we go back to our previous example, the query
 
 \begin{verbatim}
 ?- of (lam T a\P a) (arr (sort I) a\ arr a _\ a).
 \end{verbatim}
 
-would end with a delayed goal
+terminates with a delayed constraint
 
 \begin{verbatim}
 of x (sort I) ?- of (P x) (arr x _\ x)
 \end{verbatim}
 
-a subsequent query
+ITPs build the proof term by instantiation, and one has to manually
+check that when adding an assignment to the metasenv, the assigned term
+has a type compatible with the one of the meta variable being assigned.
+This mechanics is now implicit: instantiating forces resumption of a goal
+and such goal checks if the assigned term is well typed of the type
+of the meta variable just assigned.
 
+As a side note, B-Prolog (and Picat) also use matching (and
+achieve better performances.  Finally CHR needs matching, so
+implementing matching is not a waste.
+
+\subsection{Higher order constraint propagation}
+
+CHR rules are at the meta level, and can be guarded by $\lambda$Prolog
+queries.  Hence we have 2 $\lambda$Prolog runtimes: the low one (where the
+program generating constraints runs) and the high one (where CHR guards are
+executed).
+
+CHR syntax, and HO extensions (alignment)
 \begin{verbatim}
-?- P = a\ lam a pa\ Q a pa .
-\end{verbatim}
-
-would resume the goal
-
-\begin{verbatim}
-of x (sort I) ?- of (lam a pa\ Q x pa) (arr x _\ x)
-\end{verbatim}
-
-that would progress into the again suspended goal
-
-\begin{verbatim}
-of x (sort I), of y x ?- of (Q x y) x
-\end{verbatim}
-
-ITPs build the proof term by instantiation, and one has to check
-if it fits typing.  Here one cannot forget the check, since it is
-the programming language that resumes type checking whenever there is
-proof progress (by uvar instantiation).
-
-\subsection{delayed goals, HO constraint propagation}
-
-CHR seen before does 1st order constraints, here one wants to deal
-with $\lambda$Prolog goals as constraints.  Eg one wants to write  propagation
-rules like this one
-
-\begin{verbatim}
-constraint of {
-  rule (G ?- of X T1) \ (G ?- of X T2) <=> (G ?- conv T1 T2).
+CHR = "constraint" NAME { NAME } "{" {CLAUSE} { RULE } "}"
+RULE = "rule" PRESENT TO_REMOVE ALIGNMENT GUARD NEW_GOAL "."
+PRESENT = { [ TERM ] ?- TERM }
+TO_REMOVE = [ "\" [ TERM ] ?- TERM { [ TERM ] ?- TERM } ]
+ALIGNMENT = [ ">" VAR "~" VAR { "~" VAR } ]
+GUARD = [ "|" TERM ]
+NEW_GOAL = [ "<=>" TERM ]
 }
 \end{verbatim}
 
-it reflects uniqueness of typing: if \verb+X+ is used non linearly,
-then each occurrence must have the same type.
+\verb+NAME+ is the name of a predicate.
+\verb+PRESENT+ and \verb+TO_REMOVE+ a list of terms, they are called heads,
+all have disjoint variables.
+\verb+ALIGNMENT+ is a list of variables, one per head.
+\verb+GUARD+ and \verb+NEW_GOAL+ are a $\lambda$Prolog queries
+with variables that can appear in the heads.
 
-the proof theoretic semantics of $\lambda$Prolog suggests that G has to be unified
-up to commutativity of cunjunction, and that heigen variables have to
-be unified as in equivariate unification (i.e. an injective map).
-
-For example,
-
-
-\begin{verbatim}
-?- of (lam a\ lam pa\ P a pa) (arr (sort I) a\ arr a _\ a),
-   of (lam a\ lam pa\ P a pa) (arr (sort J) a\ arr a _\ a).
-\end{verbatim}
-
-generates 2 suspended goals
-
-\begin{verbatim}
-of x (sort I), of y x ?- of (P x y) x
-of w (sort J), of z w ?- of (P w z) w
-\end{verbatim}
-
-........
-
-of course one would like G to be compared like that
+A very simple example looks for 2 constraints on the same meta variable
+that have the same context (up to permutation).  In such case the second
+constraint is replaced by a goal asserting the two types are convertible.
 
 \begin{verbatim}
 constraint of {
-  map _ [] [].
-  map F [X|XS] [Y|YS] :- F X Y, map F XS YS.
-  conv-of (of X T1) (of X T2) :- conv T1 T2.
-
-  rule (nabla xv\ G2 xv ?- of (X xv) T1)
-     \ (nabla yv\ G2 yv ?- of (X yv) T2)
-     > (xv ~ yv)
-   % after that point, G1 G2 T1 T2 are aligned on the names
-   % and G1 G2 are sorted accordingly (or map is made more complex)
-     | (pi zv\ map conv-of (G1 zv) (G2 zv))
-     <=> (nabla zv\ G1 zv ?- conv T1 T2).
+  rule (G1 ?- of X T1) \ (G2 ?- of Y T2) > X ~ Y
+       | (equiv G1 G2) <=> (G1 => conv T1 T2).
 }
 \end{verbatim}
 
-or even better to have such semantics built-in in the former example
-but what if outside llam?
+The type of \verb+G1+ and \verb+G2+ is list, \verb+equiv+
+compares two lists as sets, and \verb+G1 => conv T1 T2+
+is sugar for \verb+G1x => .. => G1z => conv T1 T2+.
 
+The alignment part \verb+> X ~ Y+ asserts \verb+X+ and \verb+Y+
+are the same meta variable and finds a byjection between the
+heigen variables visible by \verb+X+ and \verb+Y+.  E.g. if \verb+X+
+matches \verb+P x y+ and \verb+Y+ matches \verb+P z w+, then
+such byjection is \verb+x->z; y->w+.
 
-DIRE CHE BASTA AGGIUNGERE un \$delay MA FORSE QUI CI VORREBBE QUELLO AD ALTISSIMO LIVELLO CHE NON ABBIAMO
+A rule operates on the subset of constraints that have \verb+NAME+
+as the head predicate.  Triggering of a rule happens as follows:
+\begin{enumerate}
+\item a new constraint $c$ is added to the global store (delay)
+\item all permutations of goals in the store of size $|heads|$
+	containing $c$ are candidates, one by one matched against the
+	heads. The ones that are successfully matched are $\bar{cs}$
+\item constraints are HO aligned (see below) according to the key and
+	byjection $j$ is found
+\item all constraints are frozen, i.e. flexible terms are replaced by
+	fresh constants and the alignment byjection is applied
+\item the guard is run in a $\lambda$Prolog runtime, at depth
+	$max(\bar{cs})$
+\item the new goal is added to the low runtime at depth max with no
+	augmented program (the user can use implication)
+\end{enumerate}
 
-FARLO VEDERE SULL'ESEMPIO?
+\subsubsection{Alignment}
 
-AGGIUNGERE ESEMPIO SU PROPAGAZIONE CONSTRAINTS A LA CHR?
+\begin{math}
+  \nabla x_1\ldots x_n, of~(X~x_1 \ldots x_n) T[x_1\ldots x_n])
+ \equiv
+  \nabla y_1\ldots y_n, of~(X~y_1 \ldots y_n) T[y_1\ldots y_n])
+\end{math}
+
+That is equivariate unification~\cite{xxx}, NP, costly.
+Also no nabla vectors, but n-ary context (list) application, so explicit
+nabla quantifiers are hard. Pragmatic: implcit nabla on the key, fast for
+llam (only 1 permutation).
+
+two modes: alignment \verb+~+ and disjoint union \verb+#+
+so that one can mix and match all the terms on the heads and never
+confuse. Example use case: CSC?
+
+FINALLY, the rule for uniq of typing for ECC....
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Application}
