@@ -166,10 +166,10 @@ of (app M N) BN :-
   of M TM, conv TM (arr A1 Bx), of N A2, sub A2 A1, BN = Bx N.
 of (lam A F) (arr A B) :-
   of (arr A B) _,
-  pi x\ (of x A, whd x x) => of (F x) (B x).
+  pi x\ (of x A, whd* x x) => of (F x) (B x).
 of (sort I) (sort J) :- succ I J.
 of (arr A Bx) (sort K) :-
-  of A TA, (pi x\ (of x A, whd x x) => of (Bx x) TB),
+  of A TA, (pi x\ (of x A, whd* x x) => of (Bx x) TB),
   conv TA (sort I), conv TB (sort J), max I J K.
 \end{verbatim}
 
