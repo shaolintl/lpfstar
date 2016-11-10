@@ -2,74 +2,67 @@
 
 spy P :- $print "----<<---- enter: " {$counter "run"} P, P, $print "---->>---- exit: " P, !.
 spy P :- $print "---->>---- fail: " P, fail.
-of X Y :- $print (of X Y), fail.
-sub X Y :- $print (sub X Y), fail.
-conv X Y :- $print (conv X Y), fail.
+
+% of X Y :- $print (of X Y), fail.
+% sub X Y :- $print (sub X Y), fail.
+% sub-whd X Y :- $print (sub-whd X Y), fail.
+% conv X Y :- $print (conv X Y), fail.
+% whd* X Y :- $print (whd* X Y), fail.
+% whd1 X Y :- $print (whd1 X Y), fail.
+% max A B C :- $print (max A B C), fail.
 
 kind term type.
 type app term -> term -> term.
 type lam term -> (term -> term) -> term.
 
-% type arr typ -> typ -> typ.
+type whd* term -> term -> prop.
+type whd1 term -> term -> prop.
 
-% type of term -> typ -> prop.
-
-% of (app M N) B :- of M (arr A B), of N A.
-% of (lam A F) (arr A B) :- pi x\ of x A => of (F x) B.
-
-type whd term -> term -> prop.
-
-whd (app M N) R :- whd M (lam _ F), whd (F N) R.
-whd (lam T F) (lam T F).
+whd1 (app M N) R :- whd* M (lam _ F), whd* (F N) R.
+whd* A B :- whd1 A A1, !, whd* A1 B.
+whd* X X.
 
 type conv term -> term -> prop.
 
 conv X X.
 conv (app M1 N1) (app M2 N2) :- conv M1 M2, conv N1 N2.
 conv (lam _ F1) (lam _ F2) :- pi x\ conv (F1 x) (F2 x).
-conv (app M N) T :- whd M (lam _ F), conv (F N) T.
-conv T (app M N) :- whd M (lam _ F), conv T (F N).
+conv A B :- whd1 A A1, conv A1 B.
+conv A B :- whd1 B B1, conv A B1.
 
 
 type sub term -> term -> prop.
 type sub-whd term -> term -> prop.
-sub A B :- whd A A1, whd B B1, sub-whd A1 B1, !.
+sub A B :- whd* A A1, whd* B B1, sub-whd A1 B1, !.
 sub-whd A B :- conv A B.
 sub-whd (sort I) (sort J) :- I < J.
 sub-whd (arr A1 F1) (arr A2 F2) :- conv A1 A2, pi x\ sub (F1 x) (F2 x).
 
 type of term -> term -> prop.
 type arr term -> (term -> term) -> term.
-whd (arr T F) (arr T F).
 
 of (app M N) BN :-
-  of M TM, sub TM (arr A1 Bx), of N A2, sub A2 A1, BN = Bx N.
+  of M TM, conv TM (arr A1 Bx), of N A2, sub A2 A1, BN = Bx N.
 of (lam A F) (arr A B) :-
-  pi x\ of x A => of (F x) (B x).
+  of A (sort I),
+  (pi x\ of x A => of (F x) (B x)),
+  of (arr A B) _. % can't put this early, since B flexible
 
 type sort int -> term.
-whd (sort I) (sort I).
 
 of (sort I) (sort J) :- succ I J.
 of (arr A Bx) (sort K) :-
   of A TA, (pi x\ of x A => of (Bx x) TB),
-  sub TA (sort I), sub TB (sort J), max I J K.
+  conv TA (sort I), conv TB (sort J), max I J K.
 
 
-
-whd s s.
-whd nat nat.
-whd o o.
 
 of nat (sort 0).
 of o nat.
 of s (app (lam (sort 0) x\ x) (arr nat _\ nat)). % redex
-succ 0 1.
-max 0 0 0.
-max 0 1 1.
-max 1 0 1.
-max 1 1 1.
-0 < 1.
+succ  I J :- J is I + 1.
+max N M M :- N =< M.
+max N M N :- M < N.
 
 
 main :-
