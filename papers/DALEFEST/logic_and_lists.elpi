@@ -1,0 +1,8 @@
+orelse A _ :- A, !.
+orelse _ B :- B.
+
+append [] L L.
+append [X|XS] L [X|XSL] :- append XS L XSL.
+
+forall2 [] [] _.
+forall2 [X|XS] [Y|YS] P :- P X Y, forall2 XS YS P.

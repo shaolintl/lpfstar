@@ -1,13 +1,5 @@
 % vim:set ft=lprolog:
 
-spy P :- $print "----<<---- enter: " {$counter "run"} P, P, $print "---->>---- exit: " P, !.
-spy P :- $print "---->>---- fail: " P, fail.
-
-% of X Y :- $print (of X Y), fail.
-% sub X Y :- $print (sub X Y), fail.
-% conv X Y :- $print (conv X Y), fail.
-% max A B C :- $print (max A B C), fail.
-
 kind term type.
 type app term -> term -> term.
 type lam term -> (term -> term) -> term.
