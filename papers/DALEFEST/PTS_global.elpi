@@ -1,6 +1,7 @@
 % PTS extension with global definitions for PTS_machine
 % accumulate after PTS_machine.elpi
-% needs lambda.elpi for lt_height
+
+accumulate lambda.
 
 type env term -> int -> term -> prop. /* name, height, definiens */
 

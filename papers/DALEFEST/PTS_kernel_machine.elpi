@@ -1,4 +1,5 @@
 accumulate PTS_typing.
 accumulate PTS_machine.
 accumulate PTS_global.
-accumulate lambda.
+accumulate PTS_ecc.
+accumulate test_kernel.

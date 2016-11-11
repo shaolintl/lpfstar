@@ -18,7 +18,7 @@ type arr term -> (term -> term) -> term.
 of (app M N) BN :-
   of M TM, conv TM (arr A1 Bx), of N A2, sub A2 A1, BN = Bx N.
 of (lam A F) (arr A B) :-
-  of A SA, conv SA (sort I),
+  of A SA, conv SA (sort _),
   (pi x\ of x A => of (F x) (B x)),
   of (arr A B) _. % can't put this early, since B flexible
 
@@ -28,24 +28,3 @@ of (sort I) (sort J) :- succ I J.
 of (arr A Bx) (sort K) :-
   of A TA, (pi x\ of x A => of (Bx x) TB),
   conv TA (sort I), conv TB (sort J), max I J K.
-
-
-
-of nat (sort 0).
-of o nat.
-of s (app (lam (sort 0) x\ x) (arr nat _\ nat)). % redex
-
-lt I J :- I < J.
-succ  I J :- J is I + 1.
-max N M M :- N =< M.
-max N M N :- M < N.
-
-
-main :-
-  P1 = (lam (sort 1) t\ lam t x\ x),
-  of P1 P1T, $print 1 P1T, !,
-  P2 = (app (app P1 nat) (app s o)),
-  of P2 P2T, $print 2 P2T, !,
-  P3 = (app (app P1 (app (app P1 (sort 0)) nat)) (app s o)), % redex
-  of P3 P3T, $print 3 P3T, !,
-  true.

@@ -1,15 +1,13 @@
-type conv term -> term -> prop.
-type sub term -> term -> prop.
+accumulate logic_and_lists.
 
-type convm term -> list term -> term -> list term -> prop.
+%%%%%%%%%%%%%%%% Reduction
 
-conv T1 T2 :- convm T1 [] T2 [].
-
-type whd1 term -> list term -> (list var -> term -> list term -> prop) -> prop.
+type whd1 term -> list term -> (list term /*var*/ -> term -> list term -> prop) -> prop.
+type whd* term -> list term -> (list term /*var*/ -> term -> list term -> prop) -> prop.
 
 % KAM-like rules in CPS style
 whd1 (app M N) S K :- K [] M [N|S].
-whd1 (lam T F1) [N|NS] K :- pi x \ val x T N NF => K [x] (F1 x) NS.
+whd1 (lam T F1) [N|NS] K :- pi x \ val x T N _NF => K [x] (F1 x) NS.
 whd1 X S K :- val X _ N NF, orelse (not ($is_flex NF)) (whd_unwind N NF), K [] NF S.
 
 % Reflexive, transitive closure
@@ -22,6 +20,7 @@ whd_unwind N NF :-
  whd* N [] (l \ t \ s \ sigma TS \ unwind_stack s t TS, put_abbr l TS NF).
 
 % unwind_stack takes an head and a stack and decodes them to a term
+type unwind_stack list term /*var*/ -> term -> term -> prop.
 unwind_stack [] T T.
 unwind_stack [X|XS] T O :- unwind_stack XS (app T X) O.
 
@@ -30,30 +29,24 @@ unwind_stack [X|XS] T O :- unwind_stack XS (app T X) O.
 put_abbr [] NF NF.
 put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
 
-% fast path rule
-convm T1 S1 T1 S1 :- !.
+%%%%%%%%%%%%%%%% Conversion
+
+type conv term -> term -> prop.
+type sub term -> term -> prop.
+
+type comp term -> list term -> eq_or_leq ->  term -> list term -> prop.
+
+conv T1 T2 :- comp T1 [] eq T2 [].
+sub T1 T2 :- comp T1 [] leq T2 [].
+
+% fast path + axiom rules
+comp T1 S1 _ T1 S1 :- !.
+comp (sort I) [] leq (sort J) [] :- lt I J.
 % congruence + fast path rule
-convm X S1 X S2 :- forall2 S1 S2 conv, !.
+comp X S1 _ X S2 :- forall2 S1 S2 conv, !.
 % congruence rules
-convm (lam T1 F1) [] (lam T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
-convm (arr T1 F1) [] (arr T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
+comp (lam T1 F1) [] _ (lam T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
+comp (arr T1 F1) [] D (arr T2 F2) [] :- conv T1 T2, pi x \ comp (F1 x) [] D (F2 x) [].
 % reduction rules
-convm T1 S1 T2 S2 :- whd1 T1 S1 (_ \ t1 \ s1 \ convm t1 s1 T2 S2), !.
-convm T1 S1 T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ convm T1 S1 t2 s2).
-
-type subm term -> list term -> term -> list term -> prop.
-
-sub T1 T2 :- whd* T1 [] (_ \ t1 \ s1 \ whd* T2 [] (_ \ subm t1 s1)).
-subm T1 S1 T2 S2 :- convm T1 S1 T2 S2.
-subm (sort I) [] (sort J) [] :- lt I J.
-subm (arr A1 F1) [] (arr A2 F2) [] :- conv A1 A2, pi x\ sub (F1 x) (F2 x).
-
-% =====================================
-orelse A B :- A, !.
-orelse A B :- B.
-
-append [] L L.
-append [X|XS] L [X|XSL] :- append XS L XSL.
-
-forall2 [] [] _.
-forall2 [X|XS] [Y|YS] P :- P X Y, forall2 XS YS P.
+comp T1 S1 D T2 S2 :- whd1 T1 S1 (_ \ t1 \ s1 \ comp t1 s1 D T2 S2), !.
+comp T1 S1 D T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ comp T1 S1 D t2 s2).

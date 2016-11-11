@@ -14,7 +14,7 @@ sub  T1 T2 :- comp T1 leq T2. % T1 subtype of T2 up to beta-reduction
 type comp term -> eq_or_leq -> term -> prop.
 
 % fast path + axiom rules
-comp X _ X.
+comp X _ X :- !.
 comp (sort I) leq (sort J) :- lt I J.
 % congruence rules
 comp (app M1 N1) _ (app M2 N2) :- conv M1 M2, conv N1 N2.
