@@ -1,0 +1,23 @@
+type whd* term -> term -> prop.
+type whd1 term -> term -> prop.
+
+whd1 (app M N) R :- whd* M (lam _ F), whd* (F N) R.
+whd* A B :- whd1 A A1, !, whd* A1 B.
+whd* X X.
+
+type conv term -> term -> prop.
+
+conv X X.
+conv (app M1 N1) (app M2 N2) :- conv M1 M2, conv N1 N2.
+conv (lam _ F1) (lam _ F2) :- pi x\ conv (F1 x) (F2 x).
+conv A B :- whd1 A A1, conv A1 B.
+conv A B :- whd1 B B1, conv A B1.
+
+
+type sub term -> term -> prop.
+type sub-whd term -> term -> prop.
+sub A B :- whd* A A1, whd* B B1, sub-whd A1 B1, !.
+sub-whd A B :- conv A B.
+sub-whd (sort I) (sort J) :- lt I J.
+sub-whd (arr A1 F1) (arr A2 F2) :- conv A1 A2, pi x\ sub (F1 x) (F2 x).
+
