@@ -1,8 +1,16 @@
-We build a kernel for CIC modularly, by first developing a kernel for a generic PTS (file \verb+kernel_pts.elpi+) and then extending it with inductive types (file \verb+kernel_inductives.elpi+ that accumulates \verb+kernel_pts.elpi+). In order to use the kernel, ones needs to accumulate it together with another file that implements the PTS rules, like \verb+pts_cc.elpi+ for those of the Calculus of Constructions (CC) or \verb+pts_cc_predicative.elpi+ for those of Luo's ECC.
+The implementation of weak head reduction given before is well known to be very inefficient, because the body of the abstraction of a $\beta$-redex is immediately completely traversed when the redex is fired. Moreover, the argument is immediately duplicated once for each occurrence of the bound variable in the body. Finally, that implementation follows the call-by-name strategy, that is inefficient per se.
 
-Our kernel for a generic PTS consists of the same type-checking rules of Section\~ref{sec:intro}, but differs in the implementation of the \verb+conv+ and \verb+sub+ judgements: as customary, we replaced the trivial implementation with a reduction machine implementing call-by-need. The machine, described in~\cite{beniamino} under the name UUUU, is a simple variation over the KAM~\cite{XXX}.
+To speed up reduction, we now provide a different implementation based on the reduction machine for call-by-need called XXXX in~\ref{beniamino}. The machine is a modified KAM~\cite{???} that records in the machine environment both terms and their normal forms, the latter being computed lazily by a new invocation of the reduction machine that is fired only when the normal form is required for the first time, i.e. when the variable bound to that value occurs in head position during reduction.
 
-A status of the machine encodes $\lambda$-terms via sharing. In order to preserve sharing when the status is decoded, we augmented the syntax of terms with typed local definitions (the \verb+let ... in+s of ML/Coq). Local definitions are typed as follows.
+In standard implementations, variables are represented by De Brujin indexes and machine environments are stacks, indexed by the variables. Since we do not use and do not want to use indexes, we took a different solution. The machine environment is represented by a set of \verb+val N T V NF+ of assumptions that we dinamically add to the $\lambda$Prolog environment using logical implication. Their meaning is that to the variable \verb+N+ we associate a value \verb+V+ of type \verb+T+ and its normal form \verb+NF+. The latter is initialized with a fresh metavariable when the binding is created by a $\beta$-reduction, and it is filled when the value is requested for the first time. To fill the value, we first start a new machine on \verb+V+ and then we decode the final machine state to \verb+NF+, an operation that we call \emph{unwind}.
+
+In any reasonable implementation of $\lambda$Prolog, fetching the normal form of \verb+x+ from the environment via a call to \verb+val x _ _ NF+ consists in fetching a clause from the current program, that is doubly indexed over the name of the clauses and the value of their first argument (if any). The index is implemented using hash tables. Therefore the look up costs $O(n)$ in the worst case where $n$ is the number of conflicts in the hash table, i.e. the length of the machine environment. This is consistent with the cost of lookup when machines are implemented as stacks and variables as De Brujin indexes. In the average case, however, the look-up is likely to be performed in $O(1)$, even if the constant hidden in the big-O notation is likely to be large.
+
+An assumption $A$ introduced in $\lambda$Prolog via $A \Rightarrow B$ is only visible in $B$. Therefore, once a variable is bound via a \verb+x t n nf+ assumption, we need to be sure that either the rest of the computations that requires the binding is performed in $B$; or we need to reintroduce syntactically the binding again around every term that escapes the scope of the assumption.
+
+We implement the first technique implementing weak head reduction in Continuation Passing Style (CPS): the \verb+whd1+ predicates takes in input the head and stack of the machine together with a continuation \verb+K+, and apply \verb+K+ to the new machine head and stack. Moreover, it also pass to \verb+K+ the list of variables that are bound in $\lambda$Prolog environment. The \verb+whd*+ predicate is also implemented in CPS style, and it is responsible for composing together the lists of variables bound during the computation.
+
+The list of variables bound in $\lambda$Prolog environment can be used after the reduction to implement the second technique: the \verb+whd_unwind t NF+ computes the normal form \verb+NF+ of \verb+t+ by calling \verb+whd*+ on \verb+t+ passing a continuation that unwinds the final machine state by also wrapping it with local definitions \verb+abbr ty val n \ \ldots+ for each \verb+val n ty val _+ in $\lambda$Prolog environment. An \verb+abbr+, also called \verb+let .. in+ in several functional programming languages, is therefore a construct to capture explicit sharing in the term syntax. Its signature and type-checking rule is:
 
 \begin{verbatim}
 type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
@@ -10,7 +18,39 @@ type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
 of (abbr TY TE F) U :- of TE TY', sub TY' TY, pi x \ of x TY => of (F X) U.
 \end{verbatim}
 
-Here are the most relevant machine rules.
+The code of the reduction machine is the following:
+
+\begin{verbatim}
+type whd1 term -> list term -> (list var -> term -> list term -> prop) -> prop.
+
+% KAM-like rules in CPS style
+whd1 (app M N) S K :- K [] M [N|S].
+whd1 (lam T F1) [N|NS] K :- pi x \ val x T N NF => K [x] (F1 x) NS.
+whd1 X S K :- val X _ N NF, orelse (not ($is_flex NF)) (whd_unwind N NF), K [] NF S.
+
+% Reflexive, transitive closure
+whd* T1 S1 K :- whd1 T1 S1 (vl1 \ t1 \ s1 \ whd* t1 s1 (vl2 \ t2 \ s2 \ sigma VL \ append vl1 vl2 VL, K VL t2 s2)), !.
+whd* T1 S1 K :- K [] T1 S1.
+
+% Whd followed by machine unwinding.
+type whd_unwind term -> term -> prop.
+whd_unwind N NF :-
+ whd* N [] (l \ t \ s \ sigma TS \ unwind_stack s t TS, put_abbr l TS NF).
+
+% unwind_stack takes an head and a stack and decodes them to a term
+unwind_stack [] T T.
+unwind_stack [X|XS] T O :- unwind_stack XS (app T X) O.
+
+% put_abbr takes a list of variables and a term and wraps the latter
+% with local definitions for the variables in the list
+put_abbr [] NF NF.
+put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
+\end{verbatim}
+
+A second optimization we implemented speeds up the conversion check by following the same heuristics implemented in Matita and, similarly, in Coq: in place of putting the two terms to be compared in weak head normal form at the beginning, the two terms are lazily reduced on demand during conversion, that at every step tries $\alpha$-conversion (i.e. $\lambda$Prolog equality) and congruence rules to avoid unnecessary reductions.
+
+In order to perform weak head lazily, we merge the \verb+conv+ and \verb+sub+ comparisons to a \verb+comp+
+XXXXXXXXXXXXXXXXXXX
 
 \begin{verbatim}
 type conv term -> term -> prop.
@@ -20,23 +60,6 @@ type convm term -> list term -> term -> list term -> prop.
 
 conv T1 T2 :- convm T1 [] T2 [].
 
-type whd1 term -> list term -> (list var -> term -> list term -> prop) -> prop.
-
-% KAM-like rules
-whd1 (app M N) S K :- K [] M [N|S].
-whd1 (lam T F1) [N|NS] K :- pi x \ val x T N NF => K [x] (F1 x) NS.
-whd1 X S K :- val X _ N NF, orelse (not ($is_flex NF)) (whd_unwind N NF), K [] NF S.
-
-whd* T1 S1 K :- whd1 T1 S1 (vl1 \ t1 \ s1 \ whd* t1 s1 (vl2 \ t2 \ s2 \ sigma VL \ append vl1 vl2 VL, K VL t2 s2)), !.
-whd* T1 S1 K :- K [] T1 S1.
-
-whd_unwind N NF :- whd* N [] (l \ t \ s \ sigma TS \ unwind_stack s t TS, put_abbr l TS NF).
-
-unwind_stack [] T T.
-unwind_stack [X|XS] T O :- unwind_stack XS (app T X) O.
-
-put_abbr [] NF NF.
-put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
 
 % fast path rule
 convm T1 S1 T1 S1 :- !.
@@ -57,74 +80,11 @@ subm (sort I) [] (sort J) [] :- lt I J.
 subm (arr A1 F1) [] (arr A2 F2) [] :- conv A1 A2, pi x\ sub (F1 x) (F2 x).
 \end{verbatim}
 
+\paragraph{Extensions with global definitions, declarations, primitive inductive types, case analysis and structural recursive definitions.}
+We implemented all the extensions mentioned in $\lambda$Prolog in a modular way. To activate one extension, it is sufficient to accumulate in the kernel a $\lambda$Prolog file that adds new constructors to the \verb+term+ and to the reduction machine stack type, and the relative clauses to the \verb+whd1, conv+ and \verb+of+ predicates.
 
-====================================================
-PER FERRUCCIO: STO LAVORANDO QUI SOPRA, SOTTO E' ROBA TUA
-====================================================
+We omit the implementation of the extensions in the paper. Activated all together, they provide a kernel that is functionally equivalent to the one of Matita. The reduction strategies implemented differ though, the one of Matita being more complex than call-by-need. We plan in the future to synchronize the two strategies in order to reliably compare the performance of the two kernels.
 
-A kernel for CIC must define two main relations on CIC terms:
-\verb+type_step T U+
-asserting that \verb+U+ is an inferred type of \verb+T+,
-and \verb+conv U1 U2+ 
-asserting that \verb+U1+ and \verb+U2+ are convertible
-(we take the name \verb+type_step+ from XXXXXXXXXXXX).
+To test the kernel, we branched it to Matita, feeding it with every term that is type-checked by Matita when checking the arithmetic library of the system.
 
-Our prototype achieves this goal by taking advantage of the next features of $\lambda$Prolog.
-
-\begin{itemize}
-
-\item
-We can extend the existing predicates on new forms of terms
-simply by adding clauses concerning these forms. 
-Therefore the kernel's architecture can be modular,
-in that a core kernel designed for an arbitrary full pure type system (PTS)
-underlies a kernel extension taking care of global constants,
-inductive types and recursive definitions.
-We define the sort hierarchy of CIC in a separate component of the kernel as well.
-This component describes the signature of CIC as a PTS,
-and the subsumption relation on CIC sorts.
-
-\item
-In CIC, both conversion and type inference occur w.r.t. an environment,
-and we can use the implicit environment provided by the
-$\lambda$Prolog engine, instead of defining our own environment explicitly.
-The environment must maintain the expected type of constants and variables,
-as well as their $\delta$-expansion when appropriate.
-At the moment, we take the data on global constants from the
-environment of the Matita ITP, with which we interface the extended
-component of our kernel. XXXXXXXXXX
-
-\end{itemize}
-
-Conversion is asserted by levels by the predicate \verb+conv_whnf U1 U2+,
-that expects \verb+U1+ and \verb+U2+ in weak head normal form (WHNF).
-Of course a metavariable optionally applied to arguments is a partial
-term in WHNF, so an elaborator can introduce unification as a
-generalization of conversion, just by extending this specific predicate.
-
-Inference of a type \verb+U+ for \verb+T+ is directed by the syntax of \verb+T+
-according to the aforementioned predicate \verb+type_step T U+.
-When \verb+T+ is the application of \verb+T0+ to some arguments,
-and given \verb+type_step T0 U0+,
-we check these arguments against the $\Pi$-abstractions (i.e. the
-universal quantifications) arising from \verb+U0+ after reduction to
-WHNF by levels. Here, we traverse each quantification by issuing a $\Pi$-reduction
-(i.e. the equivalent of a $\beta$-reduction on a $\Pi$).
-
-The responsibility of this check lies with the predicate \verb+whd_pi U0 U+,
-by which we compute the outcome \verb+U+ after the quantifications of
-\verb+U0+ are traversed. Indeed \verb+U+ is an inferred type for \verb+T+.
-
-If an application has an unknown type \verb+X+,
-an elaborator may extend this predicate to guess the quantifications
-that must occur in \verb+X+ on the basis of the application's arguments.
-
-The elaborator may as well extend the predicate \verb+type_step T U+
-in order to handle the situations in which
-the expected type of a metavariable \verb+T+ is known.
-
-Finally, note that we issue both $\beta$-reductions and $\Pi$-reductions
-by adding an explicit substitution to the context in which computation occurs.
-As we issue this substitution lazily,
-our kernel does not need the ``copying'' predicate on terms
-(following the terminology of $\lambda$Prolog).
+XXXXXXXXXXXXX parlare dei tempi

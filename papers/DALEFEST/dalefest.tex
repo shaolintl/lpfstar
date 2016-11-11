@@ -126,6 +126,7 @@ The final Section~\ref{sec:conclusions} contains comparisons with related work a
 We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. We will later instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{???}, that is a fragment of the Calculus of Inductive Constructions as well.
 
 \subsection{A kernel for PTSs with cumulativity of universes}\label{sec:kernelpts}
+\paragraph{Term representation and type-checking rules}
 We start identifying syntactically types and terms, adding a new constructor for sorts of the PTS and finally refine \verb+arr+ to the dependently typed product.
 
 \begin{verbatim}
@@ -156,39 +157,54 @@ of (arr A Bx) (sort K) :-
   conv TA (sort I), conv TB (sort J), max I J K.
 \end{verbatim}
 
-In order to implement \verb+conv+ and \verb+sub+, we first implement weak head
-reduction in one step \verb+whd1+ and weak head normalization \verb+whd*+.
-The former is trivial because we reuse the $\beta$-reduction of $\lambda$Prolog for capture avoiding substitution:
+Note that the rules are syntax directed, i.e. with explicit calls to
+\verb+sub+.  The on-paper presentation is more elegant and compact but 
+uses in a fundamental way non determinism (hence results in too much
+backtracking) by simply adding:
 
-\label{sec:intro}
 \begin{verbatim}
-type whd*, whd1 term -> term -> prop.
+of A C :- of A B, sub B C .
+\end{verbatim}
+
+Moreover, integrating \verb+sub+ into \verb+of+ infers multiple types for a term. The syntax directed rules, instead, always infer just its most general type, in the sense of Luo~\cite{luo2}.
+
+\paragraph{Reduction and conversion rules: a trivial but inefficient implementation. }\label{sec:inefficient}
+To implement \verb+conv+ and \verb+sub+, we first implement weak head
+reduction in one step \verb+whd1+ and weak head normalization \verb+whd*+.
+The former is trivial because we reuse the $\beta$-reduction of $\lambda$Prolog for capture avoiding substitution. The two former predicates are then defined by levels: to compare two terms, we first reduce both to their weak head normal forms via \verb+whd*+ and the compare the two heads. If they match, the comparison is called recursively on the subterms.
+
+%The conversion and subtyping tests are a bit more delicate, since performance-wise they are critical piece of code (see section~\ref{sec:kernel}). Here we code
+%the usual strategy of normalizing terms only if really necessary (what
+%systems typically do since Automath). The two judgements are generalized to a single \verb+comp T1 D T2+ predicate that behaves as \verb+conv T1 T2+ when \verb+D+ is \verb+eq+, and as \verb+sub+ if \verb+D+ is \verb+leq+.
+
+\begin{verbatim}
+type whd* term -> term -> prop.
+type whd1 term -> term -> prop.
 
 whd1 (app M N) R :- whd* M (lam _ F), R = F N.
 whd* A B :- whd1 A A1, !, whd* A1 B.
 whd* X X.
-\end{verbatim}
 
-The conversion and subtyping tests are a bit more delicate, since performance-wise they are critical piece of code (see section~\ref{sec:kernel}). Here we code
-the usual strategy of normalizing terms only if really necessary (what
-systems typically do since Automath). The two judgements are generalized to a single \verb+comp T1 D T2+ predicate that behaves as \verb+conv T1 T2+ when \verb+D+ is \verb+eq+, and as \verb+sub+ if \verb+D+ is \verb+leq+.
+type conv term -> term -> prop.
+type conv-whd term -> term -> prop.
 
-\begin{verbatim}
-type comp term -> eq_or_leq -> term -> prop.
+conv A B :- whd* A A1, whd* B B1, conv-whd A1 B1, !.
 
-conv T1 T2 :- comp T1 eq T2.  % T1 = T2 up to beta-reduction
-sub  T1 T2 :- comp T1 leq T2. % T1 subtype of T2 up to beta-reduction
-
-% fast path + axiom rules
-comp X _ X.
-comp (sort I) leq (sort J) :- lt I J.
+% fast path + axiom rule for sorts and bound variables
+conv-whd X X :- !.
 % congruence rules
-comp (app M1 N1) _ (app M2 N2) :- conv M1 M2, conv N1 N2.
-comp (lam A1 F1) _ (lam A2 F2) :- conv A1 A2, pi x\ conv (F1 x) (F2 x).
-comp (arr A1 F1) D (arr A2 F2) :- conv A1 A2, pi x\ comp (F1 x) D (F2 x).
-% reduction rules
-comp A D B :- whd1 A A1, comp A1 D B.
-comp A D B :- whd1 B B1, comp A D B1.
+conv-whd (app M1 N1) (app M2 N2) :- conv M1 M2, conv N1 N2.
+conv-whd (lam A1 F1) (lam A2 F2) :- conv A1 A2, pi x\ conv (F1 x) (F2 x).
+conv-whd (arr A1 F1) (arr A2 F2) :- conv A1 A2, pi x\ conv (F1 x) (F2 x).
+
+type sub term -> term -> prop.
+type sub-whd term -> term -> prop.
+
+sub A B :- whd* A A1, whd* B B1, sub-whd A1 B1, !.
+
+sub-whd A B :- conv A B, !.
+sub-whd (sort I) (sort J) :- lt I J.
+sub-whd (arr A1 F1) (arr A2 F2) :- conv A1 A2, pi x\ sub (F1 x) (F2 x).
 \end{verbatim}
 
 %Both \verb+arr+ and \verb+sort+ are rigid (in head normal form), hence the need to extend the \verb+whd+ predicate.  The conversion test, in presence of
@@ -200,16 +216,18 @@ comp A D B :- whd1 B B1, comp A D B1.
 %PTS.  We now have the predicative, universal fragment of Luo's
 %ECC~\cite{luo}, in 22 lines, wow!
 
-Note that the rules are syntax directed, i.e. with explicit calls to
-\verb+sub+.  The on-paper presentation is more elegant and compact but 
-uses in a fundamental way non determinism (hence results in too much
-backtracking) by simply adding:
+\paragraph{Defining the PTS}\label{sec:eccpts}
+To obtain the kernel, the programmer just needs to accumulate together the $\lambda$Prolog file that implements the type-checking rules, the one that deals with reduction and conversion and a final file containing the definition of a particular PTS. The latter file just needs to implement the \verb+succ,max+ and \verb+lt+ predicate over universe.
 
+For example, the following lines define the predicative hierarchy of types of Luo's ECC, using the integer $i$ to represent the universe $Type_i$.
 \begin{verbatim}
-of A C :- of A B, sub B C .
+lt I J :- I < J.
+succ  I J :- J is I + 1.
+max N M M :- N =< M.
+max N M N :- M < N.
 \end{verbatim}
 
-\subsection{An efficient kernel implementation}\label{sec:kernelmachine}
+\paragraph{Reduction an conversion rules: an efficient implementation via a reduction machine for call-by-need}\label{sec:kernelmachine}
 
 \input{kernel}
 
