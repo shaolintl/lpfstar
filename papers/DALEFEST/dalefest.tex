@@ -749,10 +749,10 @@ FINALLY, the rule for uniq of typing for ECC....
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Prototype elaborator}\label{sec:elaborator}
-We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\ref{xxx}, with the exception of the handling of universe constraints that follows Coq XXX~\ref{yyy}.
+\section{Towards an elaborator for CIC}\label{sec:elaborator}
+We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\ref{xxx}, with the exception of the handling of universe constraints that follows Coq XXX~\ref{yyy}. For the time being, however, the elaborator can only instantiate metavariables that happear in the term, lacking the possibility of entirely modifying the input term, for example introducing coercions. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of coercions.
 
-An alternative very promising choice would have been to mimic the elaborator described in~\ref{zzz} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
+In place of following Matita and Coq algorithm, an alternative very promising choice would have been to mimic the elaborator described in~\ref{zzz} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
 
 To implement the elaborator, the following steps need to be taken at the beginning of a file that accumulates at the end the code of the kernel and of the file implementing the PTS rules.
 \begin{itemize}
@@ -813,7 +813,9 @@ copy (sort _ as C) C :- !.
 copy (appl X1 L1) (appl X2 L2) :- copy X1 X2, $print "UU", map copy L1 L2.
 \end{verbatim}
 
-\subsection{universes}
+\paragraph{Inference of universes via constraints}
+
+XXX DA RISCRIVERE XXX
 
 Implementing in $\lambda$Prolog the part of the elaborator for ECC that deals
 with universe constraints is much harder and less elegant than the previous
@@ -862,6 +864,7 @@ constraint leq ltn {
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions and related works}\label{sec:conclusion}
+Related works:
 \begin{enumerate}
 \item Costrutti tipo delay
 \item Logical frameworks (Dedukti, MMT, etc.) e brrr Isabelle
@@ -869,22 +872,10 @@ constraint leq ltn {
  constraint e lean che implementa un constraint solver di qualche tipo
 \end{enumerate}
 
-\section{SCALETTA}
-
-Prima possibilità:
+Future works:
 \begin{enumerate}
-\item Si introduce per bene (??) la sintassi/semantica di CHR
-\item Si fa notare quanto sia costoso il passo di firing di una regola CHR
-      e si conclude che è meglio identificare sotto-frammenti
-\item Si introducono i mode + il costrutto delay + i pattern sulle metavariabili
-      spiegandoli come il caso comune nel quale un constraint sia immediatamente
-      propagabile senza doverne cercare altri
-\item (??) Si aggiungono gli altri costrutti di ELPI
-\item Kernel modulare di Ferruccio ed esperimenti con Matita
-\item Estensione con universi flottanti e refiner
+\item Parlare di Abella
 \end{enumerate}
-
-Seconda possibilità: si parte dal kernel di Ferruccio e poi ``on-demand'' si introduce il refiner descrivendo i comandi che usiamo 
 
 \label{sect:bib}
 \bibliographystyle{plain}
