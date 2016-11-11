@@ -15,10 +15,10 @@ whd1 X S K :- val X _ N NF, orelse (not ($is_flex NF)) (whd_unwind N NF), K [] N
 whd* T1 S1 K :- whd1 T1 S1 (vl1 \ t1 \ s1 \ whd* t1 s1 (vl2 \ t2 \ s2 \ sigma VL \ append vl1 vl2 VL, K VL t2 s2)), !.
 whd* T1 S1 K :- K [] T1 S1.
 
-whd_unwind N NF :- whd* N [] (l \ t \ s \ sigma TS \ appn s t TS, put_abbr l TS NF).
+whd_unwind N NF :- whd* N [] (l \ t \ s \ sigma TS \ unwind_stack s t TS, put_abbr l TS NF).
 
-appn [] T T.
-appn [X|XS] T O :- appn XS (app T X) O.
+unwind_stack [] T T.
+unwind_stack [X|XS] T O :- unwind_stack XS (app T X) O.
 
 put_abbr [] NF NF.
 put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
