@@ -1,3 +1,5 @@
+macro @univ :- int.
+
 lt I J :- I < J.
 succ  I J :- J is I + 1.
 max N M M :- N =< M.

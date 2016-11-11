@@ -1,5 +1,7 @@
 accumulate logic_and_lists.
 
+% Requires the accumulation of PTS_abbr_typing.
+
 %%%%%%%%%%%%%%%% Reduction
 
 type whd1 term -> list term -> (list term /*var*/ -> term -> list term -> prop) -> prop.
@@ -8,6 +10,7 @@ type whd* term -> list term -> (list term /*var*/ -> term -> list term -> prop) 
 % KAM-like rules in CPS style
 whd1 (app M N) S K :- K [] M [N|S].
 whd1 (lam T F1) [N|NS] K :- pi x \ val x T N _NF => K [x] (F1 x) NS.
+whd1 (abbr T N F1) NS K :- pi x \ val x T N _NF => K [x] (F1 x) NS.
 whd1 X S K :- val X _ N NF, orelse (not ($is_flex NF)) (whd_unwind N NF), K [] NF S.
 
 % Reflexive, transitive closure
@@ -18,6 +21,15 @@ whd* T1 S1 K :- K [] T1 S1.
 type whd_unwind term -> term -> prop.
 whd_unwind N NF :-
  whd* N [] (l \ t \ s \ sigma TS \ unwind_stack s t TS, put_abbr l TS NF).
+
+type match_sort term -> @univ -> prop.
+match_sort T I :- whd* T [] (l \ t \ s \ t = sort I, s = []).
+
+type match_arr term -> term -> (term -> term) -> prop.
+match_arr T A F :-
+ whd* T [] (l \ t \ s \ sigma A' \sigma F' \
+  s = [], t = arr A' F', put_abbr l A' A,
+  pi x \ put_abbr l (F' x) (F x)).
 
 % unwind_stack takes an head and a stack and decodes them to a term
 type unwind_stack list term /*var*/ -> term -> term -> prop.

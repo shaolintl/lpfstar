@@ -5,6 +5,12 @@ whd1 (app M N) R :- whd* M (lam _ F), R = F N.
 whd* A B :- whd1 A A1, !, whd* A1 B.
 whd* X X.
 
+type match_sort term -> @univ -> prop.
+match_sort T I :- whd* T (sort I).
+
+type match_arr term -> term -> (term -> term) -> prop.
+match_arr T A F :- whd* T (arr A F).
+
 type conv term -> term -> prop.
 type conv-whd term -> term -> prop.
 
