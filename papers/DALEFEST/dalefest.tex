@@ -165,7 +165,7 @@ type of term -> term -> o.
 of (app M N) BN :-
   of M TM, conv TM (arr A1 Bx), of N A2, sub A2 A1, BN = Bx N.
 of (lam A F) (arr A B) :-
-  of A (sort I),
+  of A SA, conv SA (sort I),
   (pi x\ of x A => of (F x) (B x)),
   of (arr A B) _. % can't put this early, since B flexible
 of (sort I) (sort J) :- succ I J.
