@@ -673,7 +673,8 @@ implementing matching is not a waste.
 CHR rules are at the meta level, and can be guarded by $\lambda$Prolog
 queries.  Hence we have 2 $\lambda$Prolog runtimes: the low one (where the
 program generating constraints runs) and the high one (where CHR guards are
-executed).
+executed, constraints manipulated and new goals for the low runtime
+generated).
 
 CHR syntax, and HO extensions (alignment)
 \begin{verbatim}
@@ -684,7 +685,6 @@ TO_REMOVE = [ "\" [ TERM ] ?- TERM { [ TERM ] ?- TERM } ]
 ALIGNMENT = [ ">" VAR "~" VAR { "~" VAR } ]
 GUARD = [ "|" TERM ]
 NEW_GOAL = [ "<=>" TERM ]
-}
 \end{verbatim}
 
 \verb+NAME+ is the name of a predicate.
@@ -707,7 +707,7 @@ constraint of {
 
 The type of \verb+G1+ and \verb+G2+ is list, \verb+equiv+
 compares two lists as sets, and \verb+G1 => conv T1 T2+
-is sugar for \verb+G1x => .. => G1z => conv T1 T2+.
+is sugar for \verb+G1a => .. => G1z => conv T1 T2+.
 
 The alignment part \verb+> X ~ Y+ asserts \verb+X+ and \verb+Y+
 are the same meta variable and finds a byjection between the
@@ -728,6 +728,7 @@ as the head predicate.  Triggering of a rule happens as follows:
 	fresh constants and the alignment byjection is applied
 \item the guard is run in a $\lambda$Prolog runtime, at depth
 	$max(\bar{cs})$
+\item to remove are removed
 \item the new goal is added to the low runtime at depth max with no
 	augmented program (the user can use implication)
 \end{enumerate}
