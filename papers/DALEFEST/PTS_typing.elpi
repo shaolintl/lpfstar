@@ -5,10 +5,7 @@ spy P :- $print "---->>---- fail: " P, fail.
 
 % of X Y :- $print (of X Y), fail.
 % sub X Y :- $print (sub X Y), fail.
-% sub-whd X Y :- $print (sub-whd X Y), fail.
 % conv X Y :- $print (conv X Y), fail.
-% whd* X Y :- $print (whd* X Y), fail.
-% whd1 X Y :- $print (whd1 X Y), fail.
 % max A B C :- $print (max A B C), fail.
 
 kind term type.
