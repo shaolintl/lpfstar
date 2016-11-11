@@ -33,7 +33,7 @@ in the style of Coq, Agda or Matita.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Introduction}
+\section{Introduction}\label{sec:introduction}
 
 \paragraph{A pragmatic reconstruction of $\lambda$Prolog.}
 
@@ -88,8 +88,7 @@ types, it is possible to obtain a proof-checker for a much richer
 logic, like the Calculus of Inductive Constructions that, up to some
 variations, is the common logic shared by the interactive theorem
 provers (ITPs) Coq~\cite{}, Lean~\cite{}, Matita~\cite{} and
-Agda~\cite{}. For example, in~\cite{us} we implemented in
-$\lambda$Prolog a type-checker for Landau's Grundlagen XXXXXXXX.
+Agda~\cite{}.
 
 Indeed, all the ITPs mentioned above are implemented following
 basically the same architecture. At the core of the system there is
@@ -102,8 +101,31 @@ The last three judgements are necessary because the type system has
 dependent types and therefore types need to be compared up to
 computation.
 
-We now scale the type-checker for simply typed $\lambda$-calculus to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. We will later instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{???}, that is a fragment of the Calculus of Inductive Constructions as well.
+However, realistic implementations of kernels employ complex techniques to improve the performance, like reduction machines to speed up reduction and heuristics to completely avoid reduction during conversion when possible. Is $\lambda$Prolog suitable to implement such techniques? The question is not totally trivial because, for example, reduction machines typically rely on the representation of terms via De Brujin indexes.
 
+We already gave a positive answer in~\cite{us} where we implemented in
+$\lambda$Prolog a type-checker for Landau's Grundlagen XXXXXXXX.
+In Section~\ref{sec:kernel} we confirm the answer again by implementing a kernel for a generic PTS that supports cumulativity between sorts as well. We then instantiate the PTS to the one of Matita and we modularly add to the kernel support for globally defined constants and form primitive inductive types, following the variant of the Calculus of Inductive Constructions of Matita. Finally, we interface the implementation with the code of Matita to test it on the arithmetic library of the system.
+
+\paragraph{From proof-checking to interactive proving.}
+
+The kernel is ultimately responsible for guaranteeing that a proof
+built using an ITP is fully sound. However, in practice the user never
+interacts with the kernel and the remaining parts of the system do not
+depend on the behaviour of the kernel. Where the real intelligence of
+the system lies is instead the second layer, called \emph{elaborator}
+or \emph{refiner}~\cite{??,??,??}.
+
+In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added?
+We will start by detailing what an elaborator is and why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators. We then present the issues we faced when coding an elaborator in $\lambda$Prolog and how similar issues are dealt with in first order Prolog. We then present ELPI, our extension to $\lambda$Prolog.  Finally we present a kernel and a prototype refiner for CIC written in ELPI.
+
+The final Section~\ref{sec:conclusions} contains comparisons with related work and future works.
+
+\section{A modular kernel for CIC}\label{sec:kernel}
+
+We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. We will later instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{???}, that is a fragment of the Calculus of Inductive Constructions as well.
+
+\subsection{A kernel for PTSs with cumulativity of universes}\label{sec:kernelpts}
 We start identifying syntactically types and terms, adding a new constructor for sorts of the PTS and finally refine \verb+arr+ to the dependently typed product.
 
 \begin{verbatim}
@@ -187,27 +209,11 @@ backtracking) by simply adding:
 of A C :- of A B, sub B C .
 \end{verbatim}
 
+\subsection{An efficient kernel implementation}\label{sec:kernelmachine}
 
-\paragraph{From proof-checking to interactive proving.}
+\input{kernel}
 
-The kernel is ultimately responsible for guaranteeing that a proof
-built using an ITP is fully sound. However, in practice the user never
-interacts with the kernel and the remaining parts of the system do not
-depend on the behaviour of the kernel. Where the real intelligence of
-the system lies is instead the second layer, called \emph{elaborator}
-or \emph{refiner}~\cite{??,??,??}.
-
-
-In this paper we investigate if $\lambda$Prolog can do that too, if not
-what shall be added.  We start by detailing what an elaborator is and
-why the state of the art is not satisfactory.  We then present the
-issues
-we faced when coding an elaborator in $\lambda$Prolog and how similar issues are
-dealt with in first order Prolog.  We then present ELPI, our extension to
-$\lambda$Prolog.  Finally we present a kernel and a prototype refiner for CIC
-written in ELPI.  We then conclude.
-
-\section{The elaborator component of today's ITPs}
+\section{The elaborator component of today's ITPs}\label{sec:problems}
 
 An elaborator takes in input a \emph{partial term} and optionally a
 type, and returns the closest term similar to the input one such that
@@ -724,13 +730,8 @@ FINALLY, the rule for uniq of typing for ECC....
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Application}
 
-\subsection{Kernel for CIC}\label{sec:kernel}
-
-\input{kernel}
-
-\subsection{Prototype elaborator}\label{sec:elaborator}
+\section{Prototype elaborator}\label{sec:elaborator}
 We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\ref{xxx}, with the exception of the handling of universe constraints that follows Coq XXX~\ref{yyy}.
 
 An alternative very promising choice would have been to mimic the elaborator described in~\ref{zzz} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
@@ -842,7 +843,7 @@ constraint leq ltn {
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Related works}
+\section{Conclusions and related works}\label{sec:conclusion}
 \begin{enumerate}
 \item Costrutti tipo delay
 \item Logical frameworks (Dedukti, MMT, etc.) e brrr Isabelle

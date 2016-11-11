@@ -10,7 +10,7 @@ type conv-whd term -> term -> prop.
 
 conv A B :- whd* A A1, whd* B B1, conv-whd A1 B1, !.
 
-% axiom rule for sorts and bound variables
+% fast path + axiom rule for sorts and bound variables
 conv-whd X X :- !.
 % congruence rules
 conv-whd (app M1 N1) (app M2 N2) :- conv M1 M2, conv N1 N2.
