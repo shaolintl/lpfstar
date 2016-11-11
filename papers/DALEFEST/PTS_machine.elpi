@@ -29,7 +29,7 @@ convm T1 S1 T1 S1 :- !.
 convm X S1 X S2 :- forall2 S1 S2 conv, !.
 % congruence rules
 convm (lam T1 F1) [] (lam T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
-convm (arr T1 F1) [] (arr T2 F2) [] :- conv T1 T2, pi x \ convm (F1 x) (F2 x).
+convm (arr T1 F1) [] (arr T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
 % reduction rules
 convm T1 S1 T2 S2 :- whd1 T1 S1 (_ \ t1 \ s1 \ convm t1 s1 T2 S2), !.
 convm T1 S1 T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ convm T1 S1 t2 s2).
