@@ -184,7 +184,7 @@ uses in a fundamental way non determinism (hence results in too much
 backtracking) by simply adding:
 
 \begin{verbatim}
-of A B :- of A C, sub A C .
+of A C :- of A B, sub B C .
 \end{verbatim}
 
 
