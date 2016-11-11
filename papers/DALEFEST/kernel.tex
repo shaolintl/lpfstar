@@ -47,6 +47,19 @@ put_abbr [] NF NF.
 put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
 \end{verbatim}
 
+The predicate \verb+match_sort+ is implemented trivially. The one for \verb+match_arr+ is slightly more delicate: the input \verb+T+ is put in weak head normal form by \verb+whd*+; the continuation retrieves the term and checks that it is a dependent product, retrieving the two subterms; the subterms may contain variables bound in the environment; therefore, before returning them, it is necessary to close them by means of \verb+abbr+s via \verb+put_abbr+, like \verb+whd_unwind+ does.
+
+\begin{verbatim}
+type match_sort term -> @univ -> prop.
+match_sort T I :- whd* T [] (l \ t \ s \ t = sort I, s = []).
+
+type match_arr term -> term -> (term -> term) -> prop.
+match_arr T A F :-
+ whd* T [] (l \ t \ s \ sigma A' \sigma F' \
+  s = [], t = arr A' F', put_abbr l A' A,
+  pi x \ put_abbr l (F' x) (F x)).
+\end{verbatim}
+
 A second optimization we implemented speeds up the conversion check by following the same heuristics implemented in Matita and, similarly, in Coq: in place of putting the two terms to be compared in weak head normal form at the beginning, the two terms are lazily reduced on demand during conversion, that at every step tries $\alpha$-conversion (i.e. $\lambda$Prolog equality) and congruence rules to avoid unnecessary reductions.
 
 In order to perform weak head lazily, we merge the \verb+conv+ and \verb+sub+ comparisons to a \verb+comp+
