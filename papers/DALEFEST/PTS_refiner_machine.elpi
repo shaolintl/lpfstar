@@ -1,0 +1,11 @@
+% refiner
+accumulate PTS_ecc_floating.
+accumulate PTS_typing_refiner_machine.
+
+% kernel
+accumulate PTS_typing.
+accumulate PTS_abbr_typing.
+accumulate PTS_machine.
+
+% tests
+accumulate test_refiner.

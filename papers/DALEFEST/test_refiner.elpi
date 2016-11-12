@@ -1,0 +1,31 @@
+%%%%%%%%%%%% A bit of library
+
+% naturals
+of nat (sort type0).
+of o nat.
+of s (arr nat x \ nat).
+
+copy nat nat.
+copy o o.
+copy s s.
+
+% vectors
+of vect (arr (sort type0) _ \ arr nat _ \ sort type0).
+of vnil (arr (sort type0) a \  app (app vect a) o).
+of vcons (arr (sort type0) a \ arr nat n \ arr a _ \ arr (app (app vect a) n) _ \ app (app vect a) (s n)).
+
+copy vect vect.
+copy vnil vnil.
+copy vcons vcons.
+
+main :-
+ % kernel tests:
+ T = app (app (app (app vcons nat) o) o) (app vnil nat), of T TY, $print 1 T ":" TY,
+
+ % Unicity of typing:
+ (pi v \ pi w \ pi c \ pi d \ (of c nat => of v (app (app vect nat) c) => of (X c v) nat), (of d nat => of w (app (app vect nat) (app s d)) => of (X (app s d) w) TT)), $print 2 TT,
+
+ % refinement tests:
+ %U = (app (lam (sort type0) x \ _F x) (sort _W)), of U UTY, $print 3 U ":" UTY.
+
+ true.
