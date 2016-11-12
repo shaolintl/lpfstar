@@ -591,63 +591,103 @@ is run
 \end{verbatim}
 
 and the goal \verb+of z (sort I) => conv (arr z _\ z) (arr (T z) y\ S z y)+
-A CHE SERVE IL CTX qui?
 
-\subsubsection{Notes on the CHR semantics and the alignment expression}
+\subsubsection{Automatic alignment and L$_\lambda$}
 
-FIXME 
-
-A rule operates on the subset of constraints that have \verb+NAME+
-as the head predicate.  Triggering of a rule happens as follows:
-\begin{enumerate}
-\item a new constraint $c$ is added to the global store (delay)
-\item all permutations of goals in the store of size $|heads|$
-	containing $c$ are candidates, one by one matched against the
-	heads. The ones that are successfully matched are $\bar{cs}$
-\item constraints are HO aligned (see below) according to the key and
-	byjection $j$ is found
-\item all constraints are frozen, i.e. flexible terms are replaced by
-	fresh constants and the alignment byjection is applied
-\item the guard is run in a $\lambda$Prolog runtime, at depth
-	$max(\bar{cs})$
-\item to remove are removed
-\item the new goal is added to the low runtime at depth max with no
-	augmented program (the user can use implication)
-\end{enumerate}
+% A rule operates on the subset of constraints that have \verb+NAME+
+% as the head predicate.  Triggering of a rule happens as follows:
+% \begin{enumerate}
+% \item a new constraint $c$ is added to the global store (delay)
+% \item all permutations of goals in the store of size $|heads|$
+% 	containing $c$ are candidates, one by one matched against the
+% 	heads. The ones that are successfully matched are $\bar{cs}$
+% \item constraints are HO aligned (see below) according to the key and
+% 	byjection $j$ is found
+% \item all constraints are frozen, i.e. flexible terms are replaced by
+% 	fresh constants and the alignment byjection is applied
+% \item the guard is run in a $\lambda$Prolog runtime, at depth
+% 	$max(\bar{cs})$
+% \item to remove are removed
+% \item the new goal is added to the low runtime at depth max with no
+% 	augmented program (the user can use implication)
+% \end{enumerate}
 
 \label{sec:realchr}
-I FULL GENERALITY
 
-... hence we provide the dojoint union alignment
-
-and we expose the explicit substitution...
-
-In LLAM
+Matching of HO is problematic in the general case, it is closely
+related to equivariate unification that is known to be NP
+hard~\cite{Cheney2004}.
+In particular, matching the head H against the goal G
+amounts to solving this equation:
 
 \begin{math}
-  \nabla x_1\ldots x_n, of~(X~x_1 \ldots x_n) T[x_1\ldots x_n])
- \equiv
-  \nabla y_1\ldots y_n, of~(X~y_1 \ldots y_n) T[y_1\ldots y_n])
+ \nabla x_1\ldots x_n, \mathcal{H} = \nabla y_1\ldots y_m, \mathcal{G}
 \end{math}
 
-That is equivariate unification~\cite{xxx}, NP, costly.
-Also no nabla vectors, but n-ary context (list) application, so explicit
-nabla quantifiers are hard. Pragmatic: implcit nabla on the key, fast for
-llam (only 1 permutation).
+CHR is already a very expensive language, its elegance is estimated
+to cost a factor of 100.  If we make matching expensive, we are likely to
+be out of any game.
 
-\subsection{Meta level = lp + matching}
+Moreover we observed that in out use case all relevant names are
+visible by the key of the delayed goal: in curry howard a meta variable
+represents a sequent, and its proof (and type) can only variables in scope.
+
+What we do is to forbid the nabla in the pattern, and as many as the
+ones in the goal are implicit. This way such injection is trivial.
+All patterns use distinct variables, so all injections are trivial.
+The we align.  We support two alignments.  One intended to be used 
+for constraints in llam, where all lists are distinct.  The cost is O(n1 * n2 * .. nk) where constraint i has ni variables (assuming the key sees them all).
+
+Another alignment mode, the one that interests us the most, is the one where
+we inject into the disjoint union.  Again the injection is trivial to compute.
+This works for non llam, leave on the user full control but little support.
+We later use this mode for the refiner.
+
+introduce \verb+(?? K L)+ syntax
+
+\subsection{Meta level: elegant but maybe overkill}
 
 The CHR is expensive, freezing/unfreezing is expensive and in many cases
-the multi-goal maching facility is not needed.  In particular
-
-$S_1 \setminus S_2 ~|~ G \iff S_3$ whose
-declarative semantics is that $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
-S_2 \iff \bigwedge S_3)$ is a rewriting that looses no solution, but
-then only this holds
+the multi-goal matching facility is not needed.  In particular
+if we look back the CHR rule syntax
+$S_1 \setminus S_2 ~|~ G \iff S_3$ and its
+declarative semantics $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
+S_2 \iff \bigwedge S_3)$ we remark that one could
+weaken the double implication obtaining
  $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
-S_2 \Leftarrow \bigwedge S_3)$
-the rule can be seen as an heuristic.  (still useful and even wanted in an
-elaborator).
+S_2 \Leftarrow \bigwedge S_3)$.  One obtains a semantics that
+is still useful, an intuitively says that $S_3$ is not the most general
+constraint but is a still a sound one.  In other words it lets
+us code heuristics, that is something the user surely wants to
+do when extending the elaborator.  Our running example
+is the following emblematic conversion (or better unification) problem
+
+\begin{verbatim}
+conv (app carrier_of R) integers
+\end{verbatim}
+
+In CIC a term can pack together types, terms and properties.  In the
+example above \verb+R+ is a single constructor inductive (a record)
+that packs together the group carrier, group operations and their properties.
+In this setting one can clearly see that the generative mode of $\lambda$Prolog corresponds to proof search.  Of course the user may have already built,
+in his library, the ring of integers (a theorem giving one of the many
+solutions to the problem above).
+
+\begin{verbatim}
+delay (conv (app carrier_of X) Y) on X.
+constraint conv {
+  rule \ (conv (carrier_of X) integers) <=> (X = integer_group).
+  rule \ (conv (carrier_of X) (intersection A B)) <=>
+    (conv (carrier_of X1) A, conv (carrier_of X2) B,
+     X = intersection_group X1 X2).
+}
+\end{verbatim}
+
+The second rule is a recursive one that represent the theorem saying
+that the intersection of 2 groups is a group.
+Remark how little we use of CHR (one head, no alignment, no need to freeze).
+Still, these simple rules are key to outstanding formalizations like
+the odd order theorem~\cite{...}.  The efficiency of such rules is critical.
 
 At the light of that we made the low level primitives that implement
 constraint generation an propagation available  in the $\lambda$Prolog
@@ -684,19 +724,23 @@ The syntax seen in \ref{sec:realchr} is also available, and lets one access
 the explicit substitution of the flexible term.
 
 \begin{verbatim}
-conv (?? as X L) T :- heuristic-assignment L T X.
+conv (app carrier_of (?? as X)) T :- heuristic-assignment L T X.
 \end{verbatim}
 
-This shall be useful in the elaborator, e.g. to craft an assignment for
-\verb+X+ when \verb+L+ is not in L$_\lambda$.
-
-This ``shortcut'' is interpreted as a
+This ease the extension of the elaborator, providing a single entry point.
+Also, by resorting to the more sophisticated syntax introduced 
+in~\ref{recrealchr}, one can also extend (conversion) unification
+outside the L$_\lambda$.  An emblematic example is
 
 \begin{verbatim}
-delay (conv X T) on X.
-constraint conv {
-  rule \ (conv (?? X L) T) | (heuristic-assignment L T V) <=> (X = V). 
+?- conv (?? F [nat_of_ord x]) T
 \end{verbatim}
+
+where \verb+x+ never occurs in \verb+T+ alone, only inside the
+\verb+nat_of_ord+ context.
+
+Such example is a PITA in Coq, since the mathcomp bigop library
+mixes the sub type of ordinals.
 
 \subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
 
