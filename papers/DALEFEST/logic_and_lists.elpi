@@ -1,6 +1,3 @@
-orelse A _ :- A, !.
-orelse _ B :- B.
-
 if A B :- A, !, B.
 if _A _B.
 
