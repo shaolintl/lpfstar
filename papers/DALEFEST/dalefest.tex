@@ -879,17 +879,34 @@ constraint leq ltn {
 }
 \end{verbatim}
 
-\paragraph{Term matching: the \texttt{match\_sort,match\_arr} predicates.}
-The predicates check if the normal form of the input has a particular shape.
-If the input is flexible, it is sufficient to instantiate it with the wanted normal form, because the type system cannot distinguish between a term and its reduct, and therefore it is pointless to give in output any solution that is not in normal form. In the code we can immediately provide the answer without delaying the goal.
+\paragraph{Reduction: the \texttt{whd1,whd*} predicates.}
+The predicate \verb+whd*+, defined in terms of \verb+whd1+, computes the normal form of the input. It is used by \verb+match_sort+ and \verb+match_arr+ to verify if the normal form has a given shape. Moreover, it calls itself recursively to compute the normal form of arguments according to the call-by-need strategy.
 
+The typing system we are implementing cannot distinguish between a term and its normal form. Therefore, when computing the normal form of a flexible input \verb+X+, it is meaningless to delay a goal stating that \verb+Y+ is the normal form of \verb+X+, because typing will not distinguish between them.
+Therefore, we will just return \verb+X+ as the normal form of \verb+X+ by letting \verb+whd1+ fail over flexible terms.
 \begin{verbatim}
-mode (match_sort i o).
-match_sort (?? as T) U :- !, T = sort U.
-
-mode (match_arr i o o).
-match_arr (?? as T) A F :- !, T = arr A F.
+mode (whd1 i i o).
+whd1 ?? _ _ :- fail.
 \end{verbatim}
+
+The consequence on the strategy is that, under certain alternations of reductions and instantiations of metavariables, the implemented strategy will be intermediate between call-by-name and call-by-need, recomputing the normal form of arguments that were metavariables at the time of their first use, with no consequences on typability.
+
+On \verb+match_sort+ and \verb+match_arr+ there is no consequence: the metavariable is immediately assigned the wanted shape, meaning that we have decided to instantiate the metavariable immediately with its normal form.
+
+%\paragraph{Term matching: the \texttt{match\_sort,match\_arr} predicates.}
+%The predicates check if the normal form of the input has a particular shape.
+%If the input is flexible, it is sufficient to instantiate it with the wanted normal form, because the type system cannot distinguish between a term and its reduct, and therefore it is pointless to give in output any solution that is not in normal form. In the code we can immediately provide the answer without delaying the goal.
+%
+%\begin{verbatim}
+%mode (match_sort i o).
+%match_sort (?? as T) U :- !, T = sort U.
+%
+%mode (match_arr i o o).
+%match_arr (?? as T) A F :- !, T = arr A F.
+%
+%mode (whd1 i i o).
+%whd1 T S K :- fail.
+%\end{verbatim}
 
 \paragraph{Term comparison: the \texttt{sub,conv} predicates.}
 
