@@ -470,14 +470,16 @@ In turn such check can either:
 \item fail, rejecting the proposed assignment for \verb+P+, e.g. 
 	\verb+t = x\lam x w\ x+.  This corresponds to an erroneous proof step,
 	i.e. the user invoked command fails.
-\item result in one or more new constraints if \verb+t+ is partial,
+\item result in one or more new constraints if \verb+t+ is partial
 	e.g. \verb+t = x\lam x w\Q x w+.  This corresponds to progress
 	in the interactive proof construction.
 \end{itemize}
 
-Extending $\lambda$Prolog with delay directive makes it possible to represent
-the metasenv as the set of delayed typing constraints and, at the same time,
-avoiding the generative semantics of predicates like \verb+of+.
+Extending $\lambda$Prolog with \verb+delay+
+directive makes it possible to represent
+the metasenv data structure implicitly, as the set of delayed typing
+constraints, and at the same time
+avoiding the undesired generative semantics of predicates like \verb+of+.
 
 \subsection{Meta theory and constraint propagation} %%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -496,12 +498,13 @@ of z (sort I) ?- of (P z) (arr (T z) y\ S z y)
 If the object language features uniqueness of typing, as it is the case
 for CIC, one surely wants to get rid of the second constraint, and
 force \verb+T = a\ a+, \verb+S = a\ b\ a+, and \verb+J = I+.
-This way, when \verb+P+ gets instantiated only one goal is resumed and hence
-its assigned term is checked only once.  Alternatively,
-if the two typing constraints clash, one wants the elaborator to backtrack.
+This way, when \verb+P+ gets instantiated \emph{only one goal}
+to type check the assigned term.  Alternatively,
+if the two typing constraints clash, one wants the elaborator to
+backtrack immediately.
 
 Prolog implementations that provide the notion of constraint typically come
-with ad-hoc constraint solvers that take care of propagating specific
+with ad-hoc constraint solvers that take care of propagating a specific
 class of constraints (arithmetic, finite domain, etc\ldots), and are
 then called \emph{Constraint Logic Programming} (CLP) languages.
 For example, the set $\{0 \leq N \leq 4, 2 \leq N \leq 5\}$ can be rewritten
@@ -516,7 +519,7 @@ S_2 \iff \bigwedge S_3)$ and whose operational semantics is to match the
 current set of constraints against both $S_1$ and $S_2$ and, if the clause $G$
 holds, replace the constraints in $S_2$ with the ones in $S_3$. All syntactic
 components can be omitted: $G$ defaults ot \verb+true+ and the sets
-$S_1,S_2,S_3$ to the emptyset. The $\iff$ symbol is also omitted when $S_3$
+$S_1,S_2,S_3$ to the empty set. The $\iff$ symbol is also omitted when $S_3$
 is, and $|$ is omitted when $G$ is. The semantics of the language is completed
 by a strategy that fixes the order in which propagation rules are fired and in
 what cases propagation rules can be backtracked.
@@ -524,7 +527,7 @@ what cases propagation rules can be backtracked.
 Adding to $\lambda$Prolog a CHR like system enables
 \begin{itemize}
 \item forward reasoning during search. When propagation rules are theorems,
-	then they fix well the proof theoretic semantics of $\lambda$Prolog
+	then they fit well the proof theoretic semantics of $\lambda$Prolog
 	and their application happens forward, while the SLD resolution engine
 	goes backward
 \item implement the optimizations given by the meta theory of the object
@@ -537,7 +540,7 @@ Adding to $\lambda$Prolog a CHR like system enables
 	constraints linking these.
 \end{itemize}
 
-At the light of that we exend the ELPI $\lambda$Prolog interpreter
+At the light of that we extend the ELPI $\lambda$Prolog interpreter
 with a higher order constraint propagation language inspired by CHR.
 
 The following propagation rule is valid code, and implements
@@ -550,7 +553,7 @@ constraint of {
 }
 \end{verbatim}
 
-Here \verb+G1 ?- of X T1+ is a constraint (dellayed goal) required
+Here \verb+G1 ?- of X T1+ is a constraint (delayed goal) required
 to be present, \verb+G2 ?- of Y T2+ is another one we want to remove.
 The type of \verb+G1+ and \verb+G2+ is \verb+o list+, i.e.
 it is a first class representation of the $\lambda$Prolog context
@@ -591,6 +594,7 @@ is run
 \end{verbatim}
 
 and the goal \verb+of z (sort I) => conv (arr z _\ z) (arr (T z) y\ S z y)+
+is generated, while the constraint on \verb+P+ is removed.
 
 \subsubsection{Automatic alignment and L$_\lambda$}
 
@@ -614,26 +618,28 @@ and the goal \verb+of z (sort I) => conv (arr z _\ z) (arr (T z) y\ S z y)+
 
 \label{sec:realchr}
 
-Matching of HO is problematic in the general case, it is closely
-related to equivariate unification that is known to be NP
+Matching of higher order CHR rules is problematic in the general case, it is
+closely related to equivariate unification that is known to be NP
 hard~\cite{Cheney2004}.
-In particular, matching the head H against the goal G
+In particular, matching the head $H$ against the goal $G$
 amounts to solving this equation:
 
 \begin{math}
  \nabla x_1\ldots x_n, \mathcal{H} = \nabla y_1\ldots y_m, \mathcal{G}
 \end{math}
 
-CHR is already a very expensive language, its elegance is estimated
-to cost a factor of 100.  If we make matching expensive, we are likely to
-be out of any game.
+CHR, whilst being very high level, it is an inefficient language.
+Its elegance, in first order case, is estimated to cost a factor of 100 over
+conventional languages.  If we make its core operation, machine, even
+more expensive, we are unlikely to obtain a working system.
 
-Moreover we observed that in out use case all relevant names are
-visible by the key of the delayed goal: in curry howard a meta variable
-represents a sequent, and its proof (and type) can only variables in scope.
+Moreover we empirically observe that, in our use cases, all relevant names are
+visible by the key of the delayed goal: in the Curry-Howard homomorphism 
+a meta variable represents a sequent, and its proof (and type) can only
+variables in scope of the meta variable.
 
-What we do is to forbid the nabla in the pattern, and as many as the
-ones in the goal are implicit. This way such injection is trivial.
+What we do is to forbid the $\nabla$ in the pattern, and implicitly consider
+a $\nabla$ many as the variable  in the goal are implicit. This way such injection is trivial.
 All patterns use distinct variables, so all injections are trivial.
 The we align.  We support two alignments.  One intended to be used 
 for constraints in llam, where all lists are distinct.  The cost is O(n1 * n2 * .. nk) where constraint i has ni variables (assuming the key sees them all).
