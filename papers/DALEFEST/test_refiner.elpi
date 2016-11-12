@@ -19,6 +19,7 @@ copy vnil vnil.
 copy vcons vcons.
 
 main :-
+/*
  % kernel test:
  (sigma T \ sigma TY \ T = app (app (app (app vcons nat) o) o) (app vnil nat), of T TY, $print 1 T ":" TY),
 
@@ -35,8 +36,22 @@ main :-
 
  % unicity of typing:
  (sigma X \sigma TT \ (pi v \ pi w \ pi c \ pi d \ (of c nat => of v (app (app vect nat) c) => of (X c v) nat), (of d nat => of w (app (app vect nat) (app s d)) => of (X (app s d) w) TT)), $print 3 TT),
+*/
+ 
+ % match_sort
+ (sigma N \ sigma T \ sigma TY \
+   T = (lam S N \ lam N n \ nat), of T TY, $print 4 T TY
+ ),
 
+ % match_arr
+ (sigma N \ sigma T \ sigma TY \
+   T = (lam TF f \ app f o), of T TY, $print 5 T TY
+ ),
+
+/*
  % refinement test:
- %(sigma U \ sigma F \ sigma W \ U = (app (lam (sort type0) x \_F x) (sort W)), of U UTY, $print 4 U ":" UTY).
-
- true.
+ (sigma U \ sigma F \ sigma W \
+  T = (lam NAT n \ lam VECTn v \ app (app (app (vcons nat) n)) v),
+  of U UTY, $print 6 U ":" UTY)
+*/
+true.

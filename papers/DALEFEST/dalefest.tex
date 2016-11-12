@@ -879,7 +879,19 @@ constraint leq ltn {
 }
 \end{verbatim}
 
-\paragraph{Term comparison: the \texttt{sub,conv,match\_sort,match\_arr} predicates}
+\paragraph{Term matching: the \texttt{match\_sort,match\_arr} predicates.}
+The predicates check if the normal form of the input has a particular shape.
+If the input is flexible, it is sufficient to instantiate it with the wanted normal form, because the type system cannot distinguish between a term and its reduct, and therefore it is pointless to give in output any solution that is not in normal form. In the code we can immediately provide the answer without delaying the goal.
+
+\begin{verbatim}
+mode (match_sort i o).
+match_sort (?? as T) U :- !, T = sort U.
+
+mode (match_arr i o o).
+match_arr (?? as T) A F :- !, T = arr A F.
+\end{verbatim}
+
+\paragraph{Term comparison: the \texttt{sub,conv} predicates.}
 
 Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic, in the case $M~t = s$ tries to instantiates $M$ with
 $\lambda x. s[x/t]$ where the latter operation replaces with $x$ subterms of $s$ that unify with $t$. In practice, in Huet's terminology it always prefer projection to mimic. When $M$ is applied to multiple $t$s or to flexible $t$s, further heuristics are used to pick one of the solution. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interactive with the ITP.
