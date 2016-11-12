@@ -19,13 +19,24 @@ copy vnil vnil.
 copy vcons vcons.
 
 main :-
- % kernel tests:
- T = app (app (app (app vcons nat) o) o) (app vnil nat), of T TY, $print 1 T ":" TY,
+ % kernel test:
+ (sigma T \ sigma TY \ T = app (app (app (app vcons nat) o) o) (app vnil nat), of T TY, $print 1 T ":" TY),
 
- % Unicity of typing:
- (pi v \ pi w \ pi c \ pi d \ (of c nat => of v (app (app vect nat) c) => of (X c v) nat), (of d nat => of w (app (app vect nat) (app s d)) => of (X (app s d) w) TT)), $print 2 TT,
+ % floating universes test:
+ % FAILURE: it enters one non-implemented restriction test in Matita
+ % (sigma I \ sigma T \ sigma J \ sigma H \ sigma TY \ T = (app (lam (sort I) x \ (sort H)) (sort J)), of T TY, $print 2 T ":" TY),
+ % Variations that delays a solvable non-pattern unification problem
+ (sigma I \ sigma T \ sigma J \ sigma H \ sigma TY \
+  (leq type1 type1, ltn type0 type1) => (
+  T = (app (lam (sort I) x \ (sort H)) (sort type0)), of T TY, $print 2 T ":" TY
+ , H = type0, I = type1, TY = sort type1, $print 2 T ":" TY
+ )
+ ),
 
- % refinement tests:
- %U = (app (lam (sort type0) x \ _F x) (sort _W)), of U UTY, $print 3 U ":" UTY.
+ % unicity of typing:
+ (sigma X \sigma TT \ (pi v \ pi w \ pi c \ pi d \ (of c nat => of v (app (app vect nat) c) => of (X c v) nat), (of d nat => of w (app (app vect nat) (app s d)) => of (X (app s d) w) TT)), $print 3 TT),
+
+ % refinement test:
+ %(sigma U \ sigma F \ sigma W \ U = (app (lam (sort type0) x \_F x) (sort W)), of U UTY, $print 4 U ":" UTY).
 
  true.

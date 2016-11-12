@@ -4,14 +4,11 @@ lt    I J :- ltn I J.
 succ  I J :- ltn I J.           % succ relaxed to <
 max N M X :- leq N X, leq M X.  % max relaxed to any upper bound
 
+mode (leq i i).
 % fixed sorts
 leq type0 type0.
 
-pts+sub S1 S2       :- leq S1 S2.
-pts+triple S1 S2 S3 :- leq S1 S3, leq S2 S3.
-pts+pair S1 S2      :- ltn S1 S2.
-
-mode (leq i i).
+% floating sorts.
 leq (?? as A) (?? as B) :- !,  $constraint (leq A B) [A,B].
 leq A         (?? as B) :- !,  $constraint (leq A B) [B].
 leq (?? as A) B         :- !,  $constraint (leq A B) [A].
