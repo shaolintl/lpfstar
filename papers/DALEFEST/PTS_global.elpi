@@ -1,7 +1,5 @@
-% PTS extension with global definitions for PTS_machine
+% PTS extension with global definitions/declarations for PTS_machine
 % accumulate after PTS_machine.elpi
-
-accumulate lambda.
 
 type env term -> int -> term -> prop. /* name, height, definiens */
 
@@ -36,8 +34,15 @@ check_rhs T1 P1 _ U1 M T2 P2 :- expand T1 P1 Q1, convm U1 Q1 M T2 P2.
 % IMPLIED DELTA %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % age/hight-implied left delta.
-check_height T1 P1 H1 U1 M T2 P2 H2 _ :- lt_height H2 H1, !,
+check_height T1 P1 H1 U1 M T2 P2 H2 _ :- H1 < H2, !,
                                          expand T1 P1 Q1, convm U1 Q1 M T2 P2.
 
 % age/hight-implied right delta.
 check_height T1 P1 _ _ M T2 P2 _ U2 :- expand T2 P2 Q2, convm T1 P1 M U2 Q2.
+
+% INTERFACE WITH GLOBAL ENVIRONMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% instantiable with environment_matita.elpi
+
+env T H U :- has_expansion T H U.
+
+of T U :- has_type T U.
