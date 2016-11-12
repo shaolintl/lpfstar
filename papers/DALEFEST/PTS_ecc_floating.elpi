@@ -1,10 +1,14 @@
-macro @univ :- int.
+kind univt type.
+type type0 univt.
+
+macro @univ :- univt.
 
 lt    I J :- ltn I J.
 succ  I J :- ltn I J.           % succ relaxed to <
 max N M X :- leq N X, leq M X.  % max relaxed to any upper bound
 
 mode (leq i i).
+
 % fixed sorts
 leq type0 type0.
 

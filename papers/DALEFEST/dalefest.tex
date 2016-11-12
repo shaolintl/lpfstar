@@ -790,23 +790,103 @@ We are developing an elaborator for CIC as a modular extension of the kernel des
 
 In place of following Matita and Coq algorithm, an alternative very promising choice would have been to mimic the elaborator described in~\ref{zzz} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
 
-To implement the elaborator, the following steps need to be taken at the beginning of a file that accumulates at the end the code of the kernel and of the file implementing the PTS rules.
-\begin{itemize}
-\item The accumulated code for the PTS is not the ones accumulated by the kernel that just verifies the typing inequations, but the one based on the first order CHR rules presented in Section~\ref{chruniverses}.
-\item The following predicates defined by structural recursion over a term
- must be given a suitable mode to prevent the generative behaviour:
- AAA (type checking), BBB (reduction), CCC (conversion), plus all derived
- predicates like DDD that infers a type and checks that the inferred type is
- a sort.
-\item A line is inserted to delay type checking a flexible term. A suitable set of propagation rules in CHR style can be added to capture unicity of typing.
-\item Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic, in the case $M~t = s$ tries to instantiates $M$ with
-$\lambda x. s[x/t]$ where the latter operation replaces with $x$ subterms of $s$ that unify with $t$. In practice, in Huet's terminology it always prefer projection to mimic. When $M$ is applied to multiple $t$s or to flexible $t$s, further heuristics are used to pick one of the solution. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interactive with the ITP.
-\item In place of delaying reducing a flexible term, the term is returned in the current state, weakening the semantics of the the BBB predicate. In practice, this is not a problem because the result of reduction is then always passed to the conversion predicate.
-\end{itemize}
+To implement the elaborator, we need to consider all the predicates defined by induction over the shape of terms, and either turn them into constraints to be propagated, or immediately suggest solutions.
+
+\paragraph{Type-checking: the \texttt{of} predicate.}
+Using a mode declaration plus \verb+$constraint+, we delay type-checking a
+metavariable, turning it into a proof obligation, i.e. a sequent of the form $\Gamma \vdash \mathtt{of}~X~t$ where $\Gamma$ holds type declarations for variables (\verb+of x t+) or value assignments (\verb+val x t v nf+).
 
 \begin{verbatim}
-mode (t+step i o).
-mode (has+sort i o).
+mode (of i o).
+of (?? as K) T :- !, $constraint (of K T) K.
+\end{verbatim}
+
+We then declare one constraint propagation rule that corresponds to a special case of unicity of typing in the case of dependently typed languages. The special case consists in the case when one of the two obligations is \emph{canonical}, i.e. it is of the form $\Gamma \vdash \mathtt{of} (X~x_1~\ldots~x_n)~t$ where all the $x_i$s are distinct variables or, equivalently, when $X~x_1~\ldots~x_n$ is in the pattern fragment $L_\lambda$ of Miller~\cite{patternfragment}.
+
+The restriction may seems severe, but, once a canonical typing constraint enters the set of delayed goals, it is simple to reduce the whole set to just the canonical one plus additional conversion constraints. Moreover, the first time a metavariable is generated in an interactive prover, it is likely to be the case that it typing constraint is canonical. Therefore, it is customary both in theory~\cite{???} and implementation~\cite{???} to always keep only canonical constraints, that are collected in a set called \emph{metavariable environment} and that are the only proof obligations presented to the user.
+
+The propagation works as follow: let $G_1 \vdash \mathtt{of} (X~x_1~\ldots~x_n) u_1$ be the canonical sequent and $G_2 \vdash \mathtt{of} (X~t_1~\ldots~t_n) u_2$ be the one to be simplified. First we compute the type of $x_1$ in $G_1$ and of $x_2$ in $G_2$, imposing as a new constraint their convertibility in $G_1 \cup G_2$. Then we proceed recursively over $x_2,\ldots,x_n$ and $t_2,\ldots,t_n$ after assigning $t_1$ to $x_1$ via +\verb+val+ in $G_1$. When the two lists become empty, we generate a final constraint to check if $u_1$ is convertible with $u_2$.
+
+To detect canonicity, we use the ad-hoc extension predicate \verb+$is_name+ of ELPI that holds iff the argument is a universal variable. The syntax $G \Rightarrow L$ when $G$ is a list of propositions is equivalent in ELPI to assuming the conjunction of the predicates in $G$.
+
+\begin{verbatim}
+constraint of val {
+  rule (G1 ?- of (?? X1 L1) T1) \ (G2 ?- of (?? X2 L2) T2) > X1 ~ X2
+   | (is_canonical L1, compat G1 L1 T1 G2 L2 T2 L3) <=> L3.
+}
+
+is_canonical [].
+is_canonical [X|XS] :- $is_name X, is_canonical XS.
+
+% (G2 ?- T2) is the canonical one
+compat G2 [] T2 G1 [] T1 H :- append G1 G2 G12, H = (G12 => conv T2 T1).
+
+compat G2 [X2|XS2] T2 G1 [X1|XS1] T1 K :-
+ H1 = (G1 => of X1 U1),
+ H2 = (G2 => of X2 U2),
+ append G1 G2 G12, H3 = (G12 => conv U1 U2),
+ compat G1 XS1 T1 [val X2 U2 X1 _NF|G2] XS2 T2 K2,
+ K = (H1, H2, H3, K2).
+\end{verbatim}
+
+\paragraph{Universe constraints: the \texttt{lt,succ,max} predicates.}
+All three predicates must be delayed when at least one of the arguments is flexible. However, satisfiability of the constraints is a necessary requirement for logical consistency. In case of violation of the constraints, it is indeed easy to encode a form of Russel's paradox~\cite{???}.
+
+In order to verify satisfiability, we could devise a set of propagation rules
+over constraints over integers induced by the last three predicates. However, to preserve the logical consistency of the system, it is not necessary to keep the total, discrete order of integers. On the contrary, it is more flexible for the user to assume a generic partial ordered set \verb+(univt,lteq)+, and to relax the successor relation to being strictly greater and the max to a generic upper bound. Satisfiability of the set is now equivalent to the abscence of a strict cicle.
+
+Detecting ciclicity in a graph is an easy job for CHR. Indeed, we took the propagation rules below off-the-shelf.
+
+\begin{verbatim}
+kind univt type.
+macro @univ :- univt.
+
+lt    I J :- ltn I J.
+succ  I J :- ltn I J.           % succ relaxed to <
+max N M X :- leq N X, leq M X.  % max relaxed to any upper bound
+
+mode (leq i i).
+leq (?? as A) (?? as B) :- !,  $constraint (leq A B) [A,B].
+leq A         (?? as B) :- !,  $constraint (leq A B) [B].
+leq (?? as A) B         :- !,  $constraint (leq A B) [A].
+
+mode (ltn i i).
+ltn (?? as A) (?? as B) :- !,  $constraint (ltn A B) [A,B].
+ltn A         (?? as B) :- !,  $constraint (ltn A B) [B].
+ltn (?? as A) B         :- !,  $constraint (ltn A B) [A].
+
+constraint leq ltn {
+  % incompatibility
+  rule (leq X Y) (ltn Y X) <=> false.
+  rule (ltn X Y) (ltn Y X) <=> false.
+  rule (ltn X X) <=> false.
+  
+  % reflexivity
+  rule \ (leq X X).
+
+  % antisymmetry
+  rule (leq X Y) \ (leq Y X) <=> (Y = X).
+
+  % transitivity
+  rule (leq X Y) (leq Y Z) <=> (leq X Z).
+  rule (leq X Y) (ltn Y Z) <=> (ltn X Z).
+  rule (ltn X Y) (leq Y Z) <=> (ltn X Z).
+  rule (ltn X Y) (ltn Y Z) <=> (ltn X Z).
+
+  % idempotence
+  rule (leq X Y) \ (leq X Y).
+  rule (ltn X Y) \ (ltn X Y).
+}
+\end{verbatim}
+
+\paragraph{Term comparison: the \texttt{sub,conv,match\_sort,match\_arr} predicates}
+
+Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic, in the case $M~t = s$ tries to instantiates $M$ with
+$\lambda x. s[x/t]$ where the latter operation replaces with $x$ subterms of $s$ that unify with $t$. In practice, in Huet's terminology it always prefer projection to mimic. When $M$ is applied to multiple $t$s or to flexible $t$s, further heuristics are used to pick one of the solution. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interactive with the ITP.
+
+==================== TODO
+
+\begin{verbatim}
 mode (conv+whnf i i i i i).
 t+step (?? as K) T :- !, $constraint (t+step K T) K.
 has+sort (?? as S) T :- !, $constraint (has+sort S T) S.
@@ -849,56 +929,6 @@ copy (sort _ as C) C :- !.
 copy (appl X1 L1) (appl X2 L2) :- copy X1 X2, $print "UU", map copy L1 L2.
 \end{verbatim}
 
-\paragraph{Inference of universes via constraints}
-
-XXX DA RISCRIVERE XXX
-
-Implementing in $\lambda$Prolog the part of the elaborator for ECC that deals
-with universe constraints is much harder and less elegant than the previous
-approach based on CHR. Indeed, the only solution is to keep an explicit list
-of constraints that become a third argument of the type-checking judgement and
-that needs to be threaded around the program, polluting the code and not
-allowing to reuse the type-checking code for the elaborator. Moreover, every
-time an additional constraint is added to the list, some special predicate to
-fire the propagation rules according to some strategy needs to be called, de
-facto forcing the user to implement the boilerplate code for constraint
-propagation.
-
-
-For example, the rules for type-checking ECC call the predicates \verb+<,max,succ+ over integers. The corresponding elaborator may be faced with sorts like \verb+sort M+ where \verb+M+ is a metavariable. The elaborator is asked to compute a suitable assignment to the metavariables that respects all constraints. Without breaking consistency, the successor predicate can be relaxed to a strictly less than, the max to a generic upper bound and the set of integers to an unspecified partial order, de facto replacing the predicates \verb+<,max,succ+ with generic predicates \verb+leq,ltn+ (lax and strict inequality over an unspecified set). Finally, the two predicates, once turned into constraints, admit the following complete set of CHR propagation rules able to detect strict cicles that correspond to unsatisfiability of the constraints.
-
-\label{chruniverses}
-\begin{verbatim}
-succ I J :- ltn I J.
-I < J :- ltn I J.
-max I J K :- leq I K, leq J K.
-
-constraint leq ltn {
-  % incompatibility
-  rule (leq X Y) (ltn Y X) <=> false.
-  rule (ltn X Y) (ltn Y X) <=> false.
-  rule (ltn X X) <=> false.
-  
-  % reflexivity
-  rule \ (leq X X).
-
-  % antisymmetry
-  rule (leq X Y) \ (leq Y X) <=> (Y = X).
-
-  % transitivity
-  rule (leq X Y) (leq Y Z) <=> (leq X Z).
-  rule (leq X Y) (ltn Y Z) <=> (ltn X Z).
-  rule (ltn X Y) (leq Y Z) <=> (ltn X Z).
-  rule (ltn X Y) (ltn Y Z) <=> (ltn X Z).
-
-  % idempotence
-  rule (leq X Y) \ (leq X Y).
-  rule (ltn X Y) \ (ltn X Y).
-}
-\end{verbatim}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions and related works}\label{sec:conclusion}
 Related works:
 \begin{enumerate}
