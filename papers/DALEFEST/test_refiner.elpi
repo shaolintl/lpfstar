@@ -50,10 +50,8 @@ main :-
 
  % whd1 triggered by call-by-need
  (sigma X \ conv (app (lam nat x \ x) X) s, $print 6 X),
-true
-/*
+
  % refinement test:
  (sigma T \ sigma TY \ sigma NAT \sigma VECTn \
   T = (lam NAT n \ lam (VECTn n) v \ app (app (app (app vcons nat) n) o) v),
   of T TY, $print 7 T ":" TY).
-*/.
