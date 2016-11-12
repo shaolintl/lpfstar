@@ -26,7 +26,7 @@ type whd1 term -> list term -> (list var -> term -> list term -> prop) -> prop.
 % KAM-like rules in CPS style
 whd1 (app M N) S K :- K [] M [N|S].
 whd1 (lam T F1) [N|NS] K :- pi x \ val x T N NF => K [x] (F1 x) NS.
-whd1 X S K :- val X _ N NF, orelse (not ($is_flex NF)) (whd_unwind N NF), K [] NF S.
+whd1 X S K :- val X _ N NF, if ($is_flex NF) (whd_unwind N NF), K [] NF S.
 
 % Reflexive, transitive closure
 whd* T1 S1 K :- whd1 T1 S1 (vl1 \ t1 \ s1 \ whd* t1 s1 (vl2 \ t2 \ s2 \ sigma VL \ append vl1 vl2 VL, K VL t2 s2)), !.
