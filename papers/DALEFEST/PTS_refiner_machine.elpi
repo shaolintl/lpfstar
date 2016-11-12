@@ -1,6 +1,7 @@
 % refiner
 accumulate PTS_ecc_floating.
 accumulate PTS_typing_refiner_machine.
+accumulate PTS_machine_refiner.
 
 % kernel
 accumulate PTS_typing.
