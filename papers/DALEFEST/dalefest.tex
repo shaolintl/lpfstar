@@ -87,8 +87,8 @@ escalating the encoded $\lambda$-calculus to more complex terms and
 types, it is possible to obtain a proof-checker for a much richer
 logic, like the Calculus of Inductive Constructions that, up to some
 variations, is the common logic shared by the interactive theorem
-provers (ITPs) Coq~\cite{}, Lean~\cite{}, Matita~\cite{} and
-Agda~\cite{}.
+provers (ITPs) Coq~\cite{coq}, Lean~\cite{lean}, Matita~\cite{matita} and
+Agda~\cite{agda}.
 
 Indeed, all the ITPs mentioned above are implemented following
 basically the same architecture. At the core of the system there is
@@ -122,21 +122,21 @@ built using an ITP is fully sound. However, in practice the user never
 interacts with the kernel and the remaining parts of the system do not
 depend on the behaviour of the kernel. Where the real intelligence of
 the system lies is instead the second layer, called \emph{elaborator}
-or \emph{refiner}~\cite{??,??,??}.
+or \emph{refiner}~\cite{??,bidir,??,??}.
 
 In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added?
-We will start by detailing what an elaborator is and why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators. We then present the issues we faced when coding an elaborator in $\lambda$Prolog and how similar issues are dealt with in first order Prolog. We then present ELPI, our extension to $\lambda$Prolog.  Finally we present a kernel and a prototype refiner for CIC written in ELPI.
+We will start by detailing what an elaborator is and why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators. We then present the issues we faced when coding an elaborator in $\lambda$Prolog and how similar issues are dealt with in first order Prolog. We then present ELPI, our extension to $\lambda$Prolog.  Finally we present a kernel and a prototype elaborator for CIC written in ELPI.
 
 The final Section~\ref{sec:conclusions} contains comparisons with related work and future works.
 
 \section{A modular kernel for CIC}\label{sec:kernel}
 
-We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. We will later instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{???}, that is a fragment of the Calculus of Inductive Constructions as well.
+We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. We will later instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{ecc}, that is a fragment of the Calculus of Inductive Constructions as well.
 
 \subsection{A kernel for PTSs with cumulativity of universes}\label{sec:kernelpts}
 \paragraph{Term representation and type-checking rules}
 We start identifying syntactically types and terms, adding a new constructor for sorts of the PTS and refining \verb+arr+ to the dependently typed product.
-\verb+@univ+ is a macro (in the syntax of the ELPI interpreter~\cite{??}) that will be instantiated in the file that implements the PTS, for example with the type of integers.
+\verb+@univ+ is a macro (in the syntax of the ELPI interpreter~\cite{elpiLPAR}) that will be instantiated in the file that implements the PTS, for example with the type of integers.
 
 \begin{verbatim}
 kind term type.
@@ -176,7 +176,7 @@ backtracking) by simply adding:
 of A C :- of A B, sub B C .
 \end{verbatim}
 
-Moreover, integrating \verb+sub+ into \verb+of+ infers multiple types for a term. The syntax directed rules, instead, always infer just its most general type, in the sense of Luo~\cite{luo2}.
+Moreover, integrating \verb+sub+ into \verb+of+ infers multiple types for a term. The syntax directed rules, instead, always infer just its most general type, in the sense of Luo~\cite{ecc}.
 
 \paragraph{Reduction and conversion rules: a trivial but inefficient implementation. }\label{sec:inefficient}
 To implement \verb+sub,match_sort,math_arr+, we first implement weak head
@@ -293,7 +293,7 @@ All algorithms manipulating terms are extended to open
 terms, in particular conversion (implemented by the 
 \verb+sub+  and \verb+conv+ predicates in the running example)
 becomes narrowing, i.e. higher order unification under a
-mixed prefix~\cite{???} in presence of rewriting rules.
+mixed prefix~\cite{mixedprefix} in presence of rewriting rules.
 Unification requires metavariable instantiation, that is
 implemented lazily for efficiency.  Type checking \verb+of+ is generalized to
 elaboration, for example by replacing all calls to conversion with calls to
@@ -331,9 +331,9 @@ Bugs in the elaborator are detected by the kernel, letting the user
 \item[extensibility of the elaborator]
 Finally, the elaborator is the brain of the system, but it is oblivious of the
 pragmatic ways to use the knowledge in the prover library, e.g.  to
-automatically fill in gaps~\cite{mathcomponents}, to coerce data from one type
+automatically fill in gaps~\cite{oothm,unificationhints}, to coerce data from one type
 to another~\cite{coercivesubtyping} or to enrich data to resolve mathematical
-abuse of notation~\cite{nonuniformunificationhints}. Therefore systems provide
+abuse of notation~\cite{nonuniformcoercions}. Therefore systems provide
 ad-hoc extension points to increase the capabilities of the elaborator.  The
 languages to write this code are typically high level, declarative, and
 try to hide the intricaces of bound variables, metavariables, etc. to the user.
@@ -805,7 +805,7 @@ implemented in Teyjus in a few minor aspects:
 	to~\cite{jlp98}, types were necessary to implement Huet's algorithm for
 	higher order unification. However, for several years now the
 	unification algorithm of Teyjus only solves equations in the pattern
-	fragment discovered by Miller~\cite{patternfrag}, which admits most
+	fragment $L_\lambda$ discovered by Miller~\cite{patternfrag}, which admits most
 	general unifiers and reduce unification to a decidable problem. All
 	other equations are automatically delayed by Teyjus to be fired only
 	when the equation is instantiated to one in the pattern fragment. At
@@ -851,18 +851,9 @@ mode (of i o).
 of (?? as K) T :- !, $constraint (of K T) K.
 \end{verbatim}
 
-We then declare one constraint propagation rule that corresponds to a special case of unicity of typing in the case of dependently typed languages. The special case consists in the case when one of the two obligations is \emph{canonical}, i.e. it is of the form $\Gamma \vdash \mathtt{of} (X~x_1~\ldots~x_n)~t$ where all the $x_i$s are distinct variables or, equivalently, when $X~x_1~\ldots~x_n$ is in the pattern fragment $L_\lambda$ of Miller~\cite{patternfragment}.
+We then declare one constraint propagation rule that corresponds to a special case of unicity of typing in the case of dependently typed languages. The special case consists in the case when one of the two obligations is \emph{canonical}, i.e. it is of the form $\Gamma \vdash \mathtt{of} (X~x_1~\ldots~x_n)~t$ where all the $x_i$s are distinct variables or, equivalently, when $X~x_1~\ldots~x_n$ is in the pattern fragment $L_\lambda$ discovered by Miller.
 
-The restriction may seems severe, but, once a canonical typing
-constraint enters the set of delayed goals, it is simple to reduce the
-whole set to just the canonical one plus additional conversion
-constraints. Moreover, the first time a metavariable is generated in
-an interactive prover as Matita it is ensured that its  its typing
-constraint is canonical. Therefore, it is customary both in
-theory~\cite{???} and implementation~\cite{???} to always keep only
-canonical constraints, that are collected in a set called
-\emph{metavariable environment} and that are the only proof
-obligations presented to the user.
+The restriction may seems severe, but, once a canonical typing constraint enters the set of delayed goals, it is simple to reduce the whole set to just the canonical one plus additional conversion constraints. Moreover, the first time a metavariable is generated in an interactive prover like Matita its typing constraint is canonical by construction. Therefore, it is customary both in theory~\cite{jojgov} and implementation~\cite{bidir} to always keep only canonical constraints, that are collected in a set called \emph{metavariable environment} and that are the only proof obligations presented to the user.
 
 The propagation works as follow: let $G_1 \vdash \mathtt{of} (X~x_1~\ldots~x_n) u_1$ be the canonical sequent and $G_2 \vdash \mathtt{of} (X~t_1~\ldots~t_n) u_2$ be the one to be simplified. First we compute the type of $x_1$ in $G_1$ and of $x_2$ in $G_2$, imposing as a new constraint their convertibility in $G_1 \cup G_2$. Then we proceed recursively over $x_2,\ldots,x_n$ and $t_2,\ldots,t_n$ after assigning $t_1$ to $x_1$ via +\verb+val+ in $G_1$. When the two lists become empty, we generate a final constraint to check if $u_1$ is convertible with $u_2$.
 
@@ -969,7 +960,7 @@ On \verb+match_sort+ and \verb+match_arr+ there is no consequence: the metavaria
 
 \paragraph{Term comparison: the \texttt{sub,conv} predicates.}
 
-Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic, in Huet's terminology~\cite{???}, always favours projections to mimic. Further heuristics are used in Matita to avoid projecting over flexible arguments, to make unification more predictable to the user. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interacting with the ITP.
+Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic always favours projections to mimic (in Huet's terminology). Further heuristics are used in Matita to avoid projecting over flexible arguments, to make unification more predictable to the user. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interacting with the ITP.
 
 The following code shows the clauses that deal with a flexible term (on the left hand side) to be unified with a rigid one on the right hand side. A simmetric set of rules is required for the dual case, and the code can obviously be unified with minor effort. Additional rules are required to deal with the flexible-flexible case.
 
