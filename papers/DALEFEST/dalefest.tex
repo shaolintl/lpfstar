@@ -584,7 +584,7 @@ of x (sort I) ?- of (c1 x) (arr x _\ x)
 of z (sort I) ?- of (c1 z) (arr (c2 z) y\ c3 z y)
 \end{verbatim}
 
-Now the alignment can easily verify that \verb+cP x+ and \verb+cP z+
+Now the alignment can easily verify that \verb+c1 x+ and \verb+c1 z+
 are terms with the same head (constraints on the same meta variable)
 and also find a bijection \verb+x -> z+.  The following query (guard)
 is run
@@ -630,16 +630,17 @@ amounts to solving this equation:
 
 CHR, whilst being very high level, it is an inefficient language.
 Its elegance, in first order case, is estimated to cost a factor of 100 over
-conventional languages.  If we make its core operation, machine, even
+conventional languages.  If we make its core operation, matching, even
 more expensive, we are unlikely to obtain a working system.
-
-Moreover we empirically observe that, in our use cases, all relevant names are
+Moreover in our use case we observe that all relevant names are
 visible by the key of the delayed goal: in the Curry-Howard homomorphism 
 a meta variable represents a sequent, and its proof (and type) can only
-variables in scope of the meta variable.
+use variables in scope of the meta variable.
 
-What we do is to forbid the $\nabla$ in the pattern, and implicitly consider
-a $\nabla$ many as the variable  in the goal are implicit. This way such injection is trivial.
+The design choice we take is to forbid the $\nabla$ in the pattern
+and implicitly consider as many $\nabla$ quantifications as the variable
+in the scope of the goal. This way such injection is trivial (but not
+canonical).
 All patterns use distinct variables, so all injections are trivial.
 The we align.  We support two alignments.  One intended to be used 
 for constraints in llam, where all lists are distinct.  The cost is O(n1 * n2 * .. nk) where constraint i has ni variables (assuming the key sees them all).
