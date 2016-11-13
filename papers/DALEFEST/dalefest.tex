@@ -853,7 +853,16 @@ of (?? as K) T :- !, $constraint (of K T) K.
 
 We then declare one constraint propagation rule that corresponds to a special case of unicity of typing in the case of dependently typed languages. The special case consists in the case when one of the two obligations is \emph{canonical}, i.e. it is of the form $\Gamma \vdash \mathtt{of} (X~x_1~\ldots~x_n)~t$ where all the $x_i$s are distinct variables or, equivalently, when $X~x_1~\ldots~x_n$ is in the pattern fragment $L_\lambda$ of Miller~\cite{patternfragment}.
 
-The restriction may seems severe, but, once a canonical typing constraint enters the set of delayed goals, it is simple to reduce the whole set to just the canonical one plus additional conversion constraints. Moreover, the first time a metavariable is generated in an interactive prover, it is likely to be the case that it typing constraint is canonical. Therefore, it is customary both in theory~\cite{???} and implementation~\cite{???} to always keep only canonical constraints, that are collected in a set called \emph{metavariable environment} and that are the only proof obligations presented to the user.
+The restriction may seems severe, but, once a canonical typing
+constraint enters the set of delayed goals, it is simple to reduce the
+whole set to just the canonical one plus additional conversion
+constraints. Moreover, the first time a metavariable is generated in
+an interactive prover as Matita it is ensured that its  its typing
+constraint is canonical. Therefore, it is customary both in
+theory~\cite{???} and implementation~\cite{???} to always keep only
+canonical constraints, that are collected in a set called
+\emph{metavariable environment} and that are the only proof
+obligations presented to the user.
 
 The propagation works as follow: let $G_1 \vdash \mathtt{of} (X~x_1~\ldots~x_n) u_1$ be the canonical sequent and $G_2 \vdash \mathtt{of} (X~t_1~\ldots~t_n) u_2$ be the one to be simplified. First we compute the type of $x_1$ in $G_1$ and of $x_2$ in $G_2$, imposing as a new constraint their convertibility in $G_1 \cup G_2$. Then we proceed recursively over $x_2,\ldots,x_n$ and $t_2,\ldots,t_n$ after assigning $t_1$ to $x_1$ via +\verb+val+ in $G_1$. When the two lists become empty, we generate a final constraint to check if $u_1$ is convertible with $u_2$.
 
