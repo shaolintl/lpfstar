@@ -349,7 +349,7 @@ the implementation of elaborators. In particular:
 \begin{enumerate}
 \item The programming language takes care of the representation of
 	\emph{bindings and metavariables} in the spirit of semi
-	shallow embedding~\cite{Dunchev:2016:IHH:2966268.2966272},
+	shallow embedding~\cite{holsuperlight},
 	solving the \textbf{programming platform} issue.
 	It also improves on \textbf{extensibility} by allowing
 	both the core implementors and the users to work on the same,
@@ -398,52 +398,60 @@ Does this idea work out of the box? Unfortunately not quite.
 We already know from~\cite{jlp98} that $\lambda$Prolog is the minimal
 extension of Prolog that allows to implement inductive predicates over
 syntax containing binders. Does it work when applied to data that is
-meant to constraint existentially quantified metavariables too?
+meant to contain existentially quantified metavariables too?
 
 Consider the $\lambda$-term \verb+(lam a\ P a)+ that encodes a
 partial proof of $\forall A, A \to A$.
 If we run the following query, the computation diverges:
 
 \begin{verbatim}
-?- of (lam T a\P a) (arr (sort I) a\ arr a _\ a)
+?- of (lam T a\ P a) (arr (sort I) a\ arr a _\ a)
 \end{verbatim}
 
 \subsection{Generative semantics and constraint declaration} %%%%%%%%%%%
 \label{sec:delay}
 
-Indeed, \verb+P+ is flexible and the \verb+of (app M N) BN+
-rule applies indefinitely.
+The rule for lambda abstraction applies fine, but generates the problematic
+goal \verb+of P (arr x _\ x)+ for some fresh \verb+x+.  Then, the type checking
+rule for application, which head is \verb+of (app M N) BN+, applies
+indefinitely.  
 
-Indeed the \verb+of+ predicate inherits from Prolog a generative semantics:
+The \verb+of+ predicate inherits from Prolog a generative semantics:
 when called recursively on a flexible input, it enumerates all
 instances trying to find the ones that are well typed. Even when proof
 search does not diverge, the behaviour obtained is not the one
 expected from an elaborator for an \emph{interactive} prover: the
 elaborator is not meant to fill in the term, unless the choice is
 obliged. On the contrary, it should leave the meta variable not
-instantiated and should \emph{remember} the need for
-veryfing if the predicate holds later on, when the metavariable gets
-instantiated. In the example above, type-checking \verb+(lam T a\P a)+ forces
-the system to remember that term of type \verb+(arr a _\ a)+ has to be
-provided, that in turn corresponds to the proof obligation
-$A : o \vdash A \to A $.
+instantiated and should \emph{remember} the need for verifying if the
+predicate holds later on, when the metavariable gets instantiated. In
+the example above, type-checking \verb+(lam T a\ P a)+ forces the
+system to remember that term of type \verb+(arr x _\ x)+ has to be
+provided (in a context where \verb+of x (sort I)+ holds), that in turn
+corresponds to the proof obligation $A : \mbox{sort I} \vdash A \to A $.
 
-This is not a problem specific of $\lambda$Prolog since Prolog behaves the same.
-Nevertheless, all modern Prolog engines provide a \verb+var/1+ built-in to
-test/guard predicates against flexible input, provide one/many variants of
-\verb+delay/2+ to suspend a goal until the input becomes rigid, and provide
-modes declarations to both statically/dynamically detect problematic goals
-and to (semi)automatically delay (suspend) them.
-These mechanisms, however, have never been standardized.
-
+As we mentioned earlier the sometimes undesired generative semantics
+comes from Prolog, i.e. it is not specific to $\lambda$Prolog.
+Nevertheless, all modern Prolog engines provide a \verb+var/1+
+built-in to test/guard predicates against flexible input, provide
+one/many variants of \verb+delay/2+ to suspend a goal until the input
+becomes rigid, and provide modes declarations to both
+statically/dynamically detect problematic goals and to (semi)
+automatically delay (suspend) them.
 For example, by using the \verb+delay+ pack of SWI-Prolog~\cite{SWI}, the goal
 \verb+plus(X,1,Y)+ is delayed until either \verb+X+ or \verb+Y+ are
 instantiated.  Delayed goals can be thought as \emph{constraints} over the
 metavariables occurring in them. In the example above, the programmer is
 imposing a constraint between \verb+X+ and \verb+Y+.
 
-At the light of that, we extend the ELPI $\lambda$Prolog interpreter
-with the following directive:
+These mechanisms, however, have never been standardized, and
+$\lambda$Prolog does not provide any of these facilities, or at least,
+does not expose them to the programmer.  Curiously the Teyjus system
+delays unification problems outside L$_\lambda$, but does not expose
+any primitive to delay other goals.
+
+At the light of all these considerations we extend the ELPI
+$\lambda$Prolog interpreter with the following directive:
 
 \begin{verbatim}
 delay (of X T) on X.
@@ -457,38 +465,41 @@ terminates leaving the following (suspended) goal unsolved:
 of x (sort I) ?- of (P x) (arr x _\ x)
 \end{verbatim}
 
-Such suspended goal is to be seen as a typing constraint on
+Such suspended goal is to be seen as a typing \emph{constraint} on
 assignments to \verb+P+: when \verb+P+ gets instantiated by a
-term \verb+t+, the goal \verb+(of (t x) (arr x _\ x))+ is resumed
-hence \verb+(t x)+ is checked to be of type \verb+(arr x _\ x)+.
+term \verb+t+, the goal \verb+of (t x) (arr x _\ x)+ is resumed
+and \verb+(t x)+ is checked to be of type \verb+(arr x _\ x)+.
 In turn such check can either:
-\begin{itemize}
-\item terminate successfully if \verb+t+ has the right type and is ground,
-	i.e. \verb+t = x\lam x w\ w+.  This corresponds to a proof step
-	that closed the goal, i.e. \verb+t+ is generated by a
-	proof command ending a proof branch.
-\item fail, rejecting the proposed assignment for \verb+P+, e.g. 
-	\verb+t = x\lam x w\ x+.  This corresponds to an erroneous proof step,
-	i.e. the user invoked command fails.
-\item result in one or more new constraints if \verb+t+ is partial
-	e.g. \verb+t = x\lam x w\Q x w+.  This corresponds to progress
-	in the interactive proof construction.
-\end{itemize}
-
-Extending $\lambda$Prolog with \verb+delay+
-directive makes it possible to represent
-the metasenv data structure implicitly, as the set of delayed typing
-constraints, and at the same time
-avoiding the undesired generative semantics of predicates like \verb+of+.
+\begin{description}
+\item[terminate] successfully if \verb+t+ has the right type and is ground,
+	i.e. \verb+t = x\lam x w\ w+.  If such assignment for \verb+P+
+	comes from a proof command, then it corresponds to a proof
+	step that closes the goal.
+\item[fail] rejecting the proposed assignment for \verb+P+, e.g. 
+	\verb+t = x\lam x w\ x+.  This corresponds to an erroneous proof
+	step.
+\item[advance] and generate one or more new constraints if \verb+t+ is partial
+	e.g. \verb+t = x\lam x w\Q x w+.  If \verb+t+ is generated by
+	a proof command, then this corresponds to a proof step that
+	generates one or more new goals.
+\end{description}
+The three behaviors above perfectly match the desired behavior of an
+elaborator.  In addition to that, the set of delayed goals
+represents faithfully the metasenv data structure, relieving the
+programmer the thread it around (and undo any changes to it in case of
+backtracking).  More that that, the automatic resumption of typing
+constraints makes it impossible to obtain an ill-typed term by
+instantiation.  Last, it lets one selectively disable the undesired
+generative semantics of predicates like \verb+of+.
 
 \subsection{Meta theory and constraint propagation} %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In many situations, the constraints that accumulate over time are
-not independent.  Indeed sets of constraints can be rewritten in order to
-simplify them, or detect their unsatisfiability and backtrack.
-
+In many situations, the constraints that accumulate over time are not
+independent, and sometimes sets of constraints can be rewritten in
+order to simplify them, or detect their unsatisfiability and
+backtrack.
 For example, if our meta variable \verb+P+ does not occur linearly, one 
-can end up with two distinct constraints on it:
+can end up with two distinct typing constraints on it:
 
 \begin{verbatim}
 of x (sort I) ?- of (P x) (arr x _\ x)
@@ -497,51 +508,63 @@ of z (sort I) ?- of (P z) (arr (T z) y\ S z y)
 
 If the object language features uniqueness of typing, as it is the case
 for CIC, one surely wants to get rid of the second constraint, and
-force \verb+T = a\ a+, \verb+S = a\ b\ a+, and \verb+J = I+.
+force \verb+T = a\ a+ and \verb+S = a\ b\ a+.
 This way, when \verb+P+ gets instantiated \emph{only one goal}
-to type check the assigned term.  Alternatively,
+is resumed (to type check the assigned term).  Alternatively,
 if the two typing constraints clash, one wants the elaborator to
 backtrack immediately.
 
-Prolog implementations that provide the notion of constraint typically come
-with ad-hoc constraint solvers that take care of propagating a specific
-class of constraints (arithmetic, finite domain, etc\ldots), and are
-then called \emph{Constraint Logic Programming} (CLP) languages.
-For example, the set $\{0 \leq N \leq 4, 2 \leq N \leq 5\}$ can be rewritten
-into $\{2 \leq N \leq 4\}$ without changing the set of ground solutions.
+Prolog implementations that provide the notion of constraint typically
+come with ad-hoc \emph{constraint solvers} that take care of
+propagating a specific class of constraints (arithmetic, finite
+domain, etc\ldots), and are then called \emph{Constraint Logic
+Programming} (CLP) languages.  For example, the set $\{0 \leq N \leq
+4, 2 \leq N \leq 5\}$ can be rewritten into $\{2 \leq N \leq 4\}$
+without changing the set of ground solutions.
 
-Most CLPs do not allow the user to define new constraints and propagation
-rules in user space. A notable exception is the first order language
-CHR~\cite{chr}. In CHR the user declares predicates and then gives a set of
-rewriting rules of the form $S_1 \setminus S_2 ~|~ G \iff S_3$ whose
-declarative semantics is that $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
-S_2 \iff \bigwedge S_3)$ and whose operational semantics is to match the
-current set of constraints against both $S_1$ and $S_2$ and, if the clause $G$
-holds, replace the constraints in $S_2$ with the ones in $S_3$. All syntactic
-components can be omitted: $G$ defaults ot \verb+true+ and the sets
-$S_1,S_2,S_3$ to the empty set. The $\iff$ symbol is also omitted when $S_3$
-is, and $|$ is omitted when $G$ is. The semantics of the language is completed
-by a strategy that fixes the order in which propagation rules are fired and in
-what cases propagation rules can be backtracked.
+Most CLPs do not allow the user to define new constraints and
+propagation rules in user space, so only constraints belonging to well
+known categories can effectively be used.  In our case the constraints
+a strongly tied to the object language, hence programmer must be able
+to describe how constraints are rewritten.
 
-Adding to $\lambda$Prolog a CHR like system enables
-\begin{itemize}
-\item forward reasoning during search. When propagation rules are theorems,
+Languages to describe sets of rules to manipulate a set of
+constraints have been studied in the literature, and the most well
+known one is certainly CHR (Constraint Handling Rules~\cite{chr}).
+In CHR is a first order language in which the user declares predicates
+and then gives a set of rewriting rules of the form $S_1 \setminus S_2 ~|~
+G \iff S_3$ whose declarative semantics is that $\bigwedge S_1 \wedge
+G \Rightarrow (\bigwedge S_2 \iff \bigwedge S_3)$ and whose
+operational semantics is to match the current set of constraints
+against both $S_1$ and $S_2$ and, if the clause $G$ holds, replace the
+constraints in $S_2$ with the ones in $S_3$. All syntactic components
+can be omitted: $G$ defaults ot \verb+true+ and the sets $S_1,S_2,S_3$
+to the empty set. The $\iff$ symbol is also omitted when $S_3$ is, and
+$|$ is omitted when $G$ is. The semantics of the language is completed
+by a strategy that fixes the order in which propagation rules are
+fired and in what cases propagation rules can be backtracked.
+
+Adding to $\lambda$Prolog, in addition to a \verb+delay+ construct to
+generate constraints, a CHR like language to manage them,
+enables the following applications:
+\begin{description}
+\item[forward reasoning during search] When propagation rules are theorems,
 	then they fit well the proof theoretic semantics of $\lambda$Prolog
 	and their application happens forward, while the SLD resolution engine
-	goes backward
-\item implement the optimizations given by the meta theory of the object
+	goes backward.
+\item[code optimizations given by the meta theory] of the object
 	language.  In the running example uniqueness of typing is key to keep
-	the evarmap linear in the number of missing sub-proofs
-\item easily turn checking into inference.  For example by replacing the
+	the evarmap linear in the number of missing sub-proofs.
+\item[turn checking into inference]  By replacing the
 	predicates \verb+<,max,succ+ with generic order constraints
 	\verb+leq,ltn+ one gets an elaborator that works with floating sorts,
-	rather than fixed integers, and produces an acyclic graph of
+	rather than fixed integers, and maintains an acyclic graph of
 	constraints linking these.
-\end{itemize}
+\end{description}
 
-At the light of that we extend the ELPI $\lambda$Prolog interpreter
-with a higher order constraint propagation language inspired by CHR.
+At the light of all these considerations we extend the ELPI
+$\lambda$Prolog interpreter with a higher order constraint propagation
+language inspired by CHR.
 
 The following propagation rule is valid code, and implements
 uniqueness of typing:
@@ -558,7 +581,8 @@ to be present, \verb+G2 ?- of Y T2+ is another one we want to remove.
 The type of \verb+G1+ and \verb+G2+ is \verb+o list+, i.e.
 it is a first class representation of the $\lambda$Prolog context
 (that augments the original program).  
-The guard \verb+equiv G1 G2+ checks that the two context are equivalent (i.e.
+The guard \verb+equiv G1 G2+ is a user defined $\lambda$Prolog program
+checking that the two context are equivalent (i.e.
 compare equal as sets).  \verb+G1 => conv T1 T2+ is
 is sugar for \verb+H1 => ... => HN => conv T1 T2+ where
 \verb+G1 = [H1, ..., HN]+, and is a new goal generated by the rule.
@@ -566,97 +590,105 @@ The alignment expressions, \verb+> X ~ Y+, asserts \verb+X+ and \verb+Y+
 are the same meta variable and finds a bijection between the
 eigenvariables (introduced by \verb+pi+ rules) in the two goals.
 
-We say that CHR rules run the \emph{meta level}, i.e. they have access
+We say that CHR rules run at the \emph{meta level}, i.e. they have access
 to the syntax of goals and to their context.  Semantically, all flexible
-terms are replace by fresh constants (we call this operation freezing).
+terms are replaced by fresh constants (we call this operation freezing).
 The bijection described by the alignment expression is key to
 manipulate in the same guard (or combine in the new goal) terms
 living in different contexts.  The new goal is defrost before being
-scheduled.  As an implementation detail, heads are \emph{matched} against the
-constraints, and only when matching + alignment works, freezing takes place.
-
+scheduled.
+As an implementation detail, heads are \emph{matched} against the
+constraints, and only when matching and alignment succeed, freezing
+takes place and the guard is run.
 
 For example, if we take the two typing constraints on \verb+P+ above
-and we freeze them we obtain
+and we freeze them we obtain:
 
 \begin{verbatim}
-of x (sort I) ?- of (c1 x) (arr x _\ x)
-of z (sort I) ?- of (c1 z) (arr (c2 z) y\ c3 z y)
+of x (sort c0) ?- of (c1 x) (arr x _\ x)
+of z (sort c0) ?- of (c1 z) (arr (c2 z) y\ c3 z y)
 \end{verbatim}
 
-Now the alignment can easily verify that \verb+c1 x+ and \verb+c1 z+
-are terms with the same head (constraints on the same meta variable)
-and also find a bijection \verb+x -> z+.  The following query (guard)
-is run
+Note that equal meta variables are frozen with the same fresh
+constant.  Eigenvariables are left untouched by freezing, it is
+the work of the alignment phase to make sense of them.
+In this simple case there is only one possible bijection
+between the two (singleton) sets of eigenvariables: 
+$x \mapsto z$.
+
+The following query is run to validate the guard of the rule.
+Such query runs in a dedicated $\lambda$Prolog runtime.
 
 \begin{verbatim}
-?- equiv [of x (sort c0)] [of x (sort c0)]
+?- equiv [of z (sort c0)] [of z (sort c0)]
 \end{verbatim}
 
-and the goal \verb+of z (sort I) => conv (arr z _\ z) (arr (T z) y\ S z y)+
-is generated, while the constraint on \verb+P+ is removed.
+Finally the following  goal is generated and scheduled for the next
+SLD resolution step.
 
-\subsubsection{Automatic alignment and L$_\lambda$}
+\begin{verbatim}
+of z (sort I) => conv (arr z _\ z) (arr (T z) y\ S z y)
+\end{verbatim}
 
-% A rule operates on the subset of constraints that have \verb+NAME+
-% as the head predicate.  Triggering of a rule happens as follows:
-% \begin{enumerate}
-% \item a new constraint $c$ is added to the global store (delay)
-% \item all permutations of goals in the store of size $|heads|$
-% 	containing $c$ are candidates, one by one matched against the
-% 	heads. The ones that are successfully matched are $\bar{cs}$
-% \item constraints are HO aligned (see below) according to the key and
-% 	byjection $j$ is found
-% \item all constraints are frozen, i.e. flexible terms are replaced by
-% 	fresh constants and the alignment byjection is applied
-% \item the guard is run in a $\lambda$Prolog runtime, at depth
-% 	$max(\bar{cs})$
-% \item to remove are removed
-% \item the new goal is added to the low runtime at depth max with no
-% 	augmented program (the user can use implication)
-% \end{enumerate}
+The new goal eventually assigns \verb+T+ and \verb+S+, and its success
+or failure is semantically equivalent to the satisfiability of the
+second constraint on \verb+P+, that is removed.
 
+\subsubsection{Automatic alignment of goals}
 \label{sec:realchr}
 
-Matching of higher order CHR rules is problematic in the general case, it is
-closely related to equivariate unification that is known to be NP
-hard~\cite{Cheney2004}.
-In particular, matching the head $H$ against the goal $G$
-amounts to solving this equation:
+Matching of $\lambda$Prolog goals is a delicate matter: eigenvariables
+are fresh names, not hard variables, and their semantics is quite
+different~\cite{nabla}.  
+In particular, matching goal $H$ against goal $G$ amounts
+to solving this equation:
 
 \begin{math}
  \nabla x_1\ldots x_n, \mathcal{H} = \nabla y_1\ldots y_m, \mathcal{G}
 \end{math}
 
-CHR, whilst being very high level, it is an inefficient language.
-Its elegance, in first order case, is estimated to cost a factor of 100 over
-conventional languages.  If we make its core operation, matching, even
-more expensive, we are unlikely to obtain a working system.
-Moreover in our use case we observe that all relevant names are
-visible by the key of the delayed goal: in the Curry-Howard homomorphism 
-a meta variable represents a sequent, and its proof (and type) can only
-use variables in scope of the meta variable.
+In the general case it is closely related to equivariate unification
+that is known to be a NP hard~\cite{Cheney2004} problem.  While being
+an elegant high level language, CHR is not efficient.  It is estimated
+be on average 100 times slower than conventional programming
+languages.  If, by hangling higher order constraints, we make its core
+operation, matching, even more expensive, we are unlikely to obtain a
+working system.
 
-The design choice we take is to forbid the $\nabla$ in the pattern
-and implicitly consider as many $\nabla$ quantifications as the variable
-in the scope of the goal. This way such injection is trivial (but not
-canonical).
-All patterns use distinct variables, so all injections are trivial.
-The we align.  We support two alignments.  One intended to be used 
-for constraints in llam, where all lists are distinct.  The cost is O(n1 * n2 * .. nk) where constraint i has ni variables (assuming the key sees them all).
+Luckily the user case that drove our design seems to be on a lucky
+spot: all relevant names are visible by the key of the delayed goal.
+Indeed, in the Curry-Howard homomorphism, a meta variable represents a
+sequent, and its proof (and type) can only use variables in scope of
+the meta variable.  The design choice we make is to forbid the
+$\nabla$ in the patterns of CHR rules, and implicitly consider as many
+$\nabla$ quantifications as eigenvariables visible to the key variable
+of constraint being matched by the CHR head.  This way we can impose
+the trivial bijection between the names in the pattern and the names
+in the constraint.  Also, all patterns use distinct meta variables, so
+all injections are trivial.  In other words, names are only dealt with
+in the alignment.
+We support two form of alignments: one ``automatic'' based on the
+L$_\lambda$ invariant and one ``manual'' for programs that go
+outside that fragment.
 
-Another alignment mode, the one that interests us the most, is the one where
-we inject into the disjoint union.  Again the injection is trivial to compute.
-This works for non llam, leave on the user full control but little support.
-We later use this mode for the refiner.
+In L$_\lambda$ the variables visible by each constraint key are distinct,
+and equating the keys gives a bijection between the names.
+If a CHR rue has $n$ patterns, and each corresponding goal has $m$
+eigenvariables, then the alignment is compute in $O(m^n)$
 
-introduce \verb+(?? K L)+ syntax
+The manual alignment injects all eigenvariables to the disjoint union
+of the eigenvariables visible by each constraint key.  In other words
+the terms bound by the CHR rule's heads share no names: it is
+up to the programmer to eventually relate the names.
+In this case we also let the programmer access the list of terms
+to which the meta variable is applied with the following syntax:
+\verb+(?? K L as X)+.  Here \verb+K+ is the meta variable, while
+\verb+L+ is the list of terms to which it is applied.  We put this
+feature to good use in the next section.
 
-\subsection{Meta level: elegant but maybe overkill}
+\subsection{Meta level: elegant but overkill}
 
-The CHR is expensive, freezing/unfreezing is expensive and in many cases
-the multi-goal matching facility is not needed.  In particular
-if we look back the CHR rule syntax
+If we look back the CHR rule syntax
 $S_1 \setminus S_2 ~|~ G \iff S_3$ and its
 declarative semantics $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
 S_2 \iff \bigwedge S_3)$ we remark that one could
@@ -692,13 +724,18 @@ constraint conv {
 
 The second rule is a recursive one that represent the theorem saying
 that the intersection of 2 groups is a group.
-Remark how little we use of CHR (one head, no alignment, no need to freeze).
-Still, these simple rules are key to outstanding formalizations like
-the odd order theorem~\cite{...}.  The efficiency of such rules is critical.
 
-At the light of that we made the low level primitives that implement
-constraint generation an propagation available  in the $\lambda$Prolog
-directly.
+Remark how little we use of CHR in this rule: only one head, no alignment,
+no guard (i.e. no need to freeze).
+Still, these simple rules faitfully model the extension to the elaborator
+of Coq that proved to be key to outstanding formalizations like
+the Odd Order Theorem~\cite{oothm}.  Such formalization declares a 26
+hundreds of rules like these ones.  It goes without saying that
+the efficiency of such rules is critical.
+
+To well support this use case we make the low level primitives that implement
+constraint generation an propagation available in the $\lambda$Prolog
+language directly.
 
 The first primitive is called \verb+mode+ and lets one tag arguments of
 a predicate as input ones.
@@ -708,52 +745,60 @@ mode (of i o).
 \end{verbatim}
 
 The result is that arguments marked as input are \emph{matched}
-against the corresponding arguments in the goal.
-This means the goal is not instantiated.
+against the corresponding arguments in the goal, exactly as the
+CHR engine matches the heads of a rule against constraints (without
+instantiating any meta variable occurring in the constraints).
+This let us write programs like the following one without risking that
+the first two rule ``generate'' the input.  Of course the right
+hand side of the clauses can instantiate meta variables.
 
 \begin{verbatim}
 of (lam T F) T :- ...
 of (app M N) T :- ...
-of X T :- var X, delay (of X T) on X.
+of X T :- var X, $delay (of X T) [X].
 \end{verbatim}
 
-Note that this is stronger than placing the following clause on top
-and not using \verb+mode+
+The last rule is the actual implementation of the global directive
+\verb+delay .. on ..+ we described before.  Note that this way the
+condition to identify goals to delay can be made arbitrarily
+sophisticated.
+
+Remark that declaring \verb+mode (of i o)+ is stronger than
+placing the following clause on top, 
+since hypothetical clauses may be placed by the runtime before this one,
+and they can be generative as well.
 
 \begin{verbatim}
 of X T :- var A, !, ...
 \end{verbatim}
 
-since hypothetical clauses may be placed by the runtime before this one,
-defeating the purpose of the clause.
-
-The syntax seen in \ref{sec:realchr} is also available, and lets one access
-the explicit substitution of the flexible term.
-
-\begin{verbatim}
-conv (app carrier_of (?? as X)) T :- heuristic-assignment L T X.
-\end{verbatim}
-
-This ease the extension of the elaborator, providing a single entry point.
-Also, by resorting to the more sophisticated syntax introduced 
-in~\ref{recrealchr}, one can also extend (conversion) unification
-outside the L$_\lambda$.  An emblematic example is
+The syntax \verb+(?? K L as X)+ seen in \ref{sec:realchr} is also
+available, and lets one access the arguments of a flexible term.
+This lets one extend the conversion predicate (unification in the
+elaborator) to cover terms outside L$_\lambda$.  An emblematic example is
+the following one:
 
 \begin{verbatim}
 ?- conv (?? F [nat_of_ord x]) T
 \end{verbatim}
 
-where \verb+x+ never occurs in \verb+T+ alone, only inside the
-\verb+nat_of_ord+ context.
-
-Such example is a PITA in Coq, since the mathcomp bigop library
-mixes the sub type of ordinals.
+When \verb+x+ never occurs in \verb+T+ alone, only inside the
+\verb+nat_of_ord+ context.  Such example is occurs very frequently
+in the~\cite{bigop} library for Coq, where theorems about iterated
+operations over finite domains are provided.
+For example the $\sum_{i < 7} (F~i)$ expression hides
+the \verb+nat_of_ord+ injection around $i$ (a term of the
+type of $I_7$, a finite subsed of the integers of cardinality $7$).
+The impossibility to extend the elaborator of Coq with any heuristic
+so solve the goal above makes the use of these lemma painful, since
+one may have to provide \verb+F+ by hand, instead of having it
+automatically inferred.
 
 \subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
 
-In addition to the new programming constructs that deal with constraints, it
-slightly differs from the version of $\lambda$Prolog implemented in Teyjus in a
-few minor aspects:
+In addition to the new programming constructs that deal with
+constraints, ELPI slightly differs from the version of $\lambda$Prolog
+implemented in Teyjus in a few minor aspects:
 \begin{itemize}
 \item In ELPI all types and type and sort declarations can be omitted, whereas
 	they are mandatory in Teyjus. Originally, and according
@@ -783,6 +828,10 @@ Despite the differences above, we tried very hard to maintain backward
 compatibility with Teyjus and its standard library. Indeed, we are able to
 execute in ELPI all the code from Teyjus that we collected from the Web, up to
 a very few minor changes to the source code, mostly due to 2 and 3.
+
+Last, ELPI is a pure interpreter written in OCaml.  Embedding it into
+larger applications like Coq or Matita is easy (no external program to
+run, no compilation chain).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
