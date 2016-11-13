@@ -20,17 +20,22 @@
 \maketitle
 
 \begin{abstract}
-Higher Order Logic Programming and its main incarnation, which is $\lambda$Prolog, were introduced by Nadathur and Miller in the 80s. Like logical frameworks, it allows to write type-checkers extremely naturally, just encoding the derivation rules in an almost Verbatim way. In particular, thanks to a shallow encoding of binders, the implementor is relieved from dealing with binders, capture avoiding substitution, alpha-conversion and the like. By delegating them to the language, it can focus on the logic of the program he is implementing and he can hope in future optimizations of the compiler to improve the efficiency of code. Thanks to the Curry-Howard isomorphism, proof-checkers --- e.g. for dependently typed languages --- can also be encoded in the same way.
+In this paper we are interested in high level programming languages to implement the core components of an interactive theorem prover for a dependently typed language: the kernel --- responsible for type-checking closed terms --- and the elaborator --- that manipulates terms with holes or, equivalently, partial proof terms.
 
-To implement an interactive theorem prover following the Curry-Howard correspondence, the programmer basically has to generalize the type-checker by allowing incomplete terms whose holes are represented by existentially quantified metavariables. Adopting a deep encoding, the user is forced to implement non-capture-avoiding instantiation, explicit substitutions and higher order unification under a mixed prefix. Therefore, we would prefer a shallow encoding of metavariables, where the existentially quantified metavariables of the logic programming language directly represent metavariables of the encoded typed calculus, and the previously mentioned operations can be largely inherited from the metalevel.
+In the first part we confirm that $\lambda$Prolog, the language developed by Nadathur and Miller since the 80s, is extremely suitable for implementing the kernel, even when efficient techniques like reduction machines are employed.
 
-Such deep encodings do not work for $\lambda$Prolog and, more generally, for all higher order logic programming languages and logical frameworks. Indeed, the standard operational semantics of $\lambda$Prolog is generative, i.e. when a predicate like well-typedness inspects a flexible term, all possible instantiations of the latter are tried blindly. On the contrary, in an interactive theorem prover a predicate over a flexible term is supposed to be delayed and turned into a constraint to be solved later. When constraints accumulate, they can be simplified and propagated exactly in the spirit of constraint programming.
+In the second part we turn our attention to the elaborator and we observe that the eager generative semantics inherited by Prolog makes it impossible to reason by induction over terms containing metavariables. We also conclude that the minimal extension to $\lambda$Prolog that allows to do so is the possibility to delay inductive predicates over flexible terms, turning them into (set of) constraints to be propagated according to user provided constraint propagation rules.
 
-In this paper we present a first proposal for an higher order constraint logic
-programming language obtained as an extension of $\lambda$Prolog. We also present
-applications to the implementation of an elaborator for the Calculus of
-Inductive Constructions, i.e. the core of a modern interactive theorem prover
-in the style of Coq, Agda or Matita.
+Therefore we propose our syntax and implementation of the first Higher Order Constraint Logic Programming (HOCLP) language. We also show as a test-case how to implement an elaborator for a dependently typed theory as a CLP extension to a kernel written in plain $\lambda$Prolog.
+
+
+%Higher Order Logic Programming and its main incarnation, which is $\lambda$Prolog, were introduced by Nadathur and Miller in the 80s. Like logical frameworks, it allows to write type-checkers extremely naturally, just encoding the derivation rules in an almost Verbatim way. In particular, thanks to a shallow encoding of binders, the implementor is relieved from dealing with binders, capture avoiding substitution, alpha-conversion and the like. By delegating them to the language, it can focus on the logic of the program he is implementing and he can hope in future optimizations of the compiler to improve the efficiency of code. Thanks to the Curry-Howard isomorphism, proof-checkers --- e.g. for dependently typed languages --- can also be encoded in the same way.
+
+%To implement an interactive theorem prover following the Curry-Howard correspondence, the programmer basically has to generalize the type-checker by allowing incomplete terms whose holes are represented by existentially quantified metavariables. Adopting a deep encoding, the user is forced to implement non-capture-avoiding instantiation, explicit substitutions and higher order unification under a mixed prefix. Therefore, we would prefer a shallow encoding of metavariables, where the existentially quantified metavariables of the logic programming language directly represent metavariables of the encoded typed calculus, and the previously mentioned operations can be largely inherited from the metalevel.
+
+%Such deep encodings do not work for $\lambda$Prolog and, more generally, for all higher order logic programming languages and logical frameworks. Indeed, the standard operational semantics of $\lambda$Prolog is generative, i.e. when a predicate like well-typedness inspects a flexible term, all possible instantiations of the latter are tried blindly. On the contrary, in an interactive theorem prover a predicate over a flexible term is supposed to be delayed and turned into a constraint to be solved later. When constraints accumulate, they can be simplified and propagated exactly in the spirit of constraint programming.
+
+%In this paper we present a first proposal for an higher order constraint logic programming language obtained as an extension of $\lambda$Prolog. We also present applications to the implementation of an elaborator for the Calculus of Inductive Constructions, i.e. the core of a modern interactive theorem prover in the style of Coq, Agda or Matita.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -870,9 +875,9 @@ compat G2 [X2|XS2] T2 G1 [X1|XS1] T1 K :-
 All three predicates must be delayed when at least one of the arguments is flexible. However, satisfiability of the constraints is a necessary requirement for logical consistency. In case of violation of the constraints, it is indeed easy to encode a form of Russel's paradox.
 
 In order to verify satisfiability, we could devise a set of propagation rules
-over constraints over integers induced by the last three predicates. However, to preserve the logical consistency of the system, it is not necessary to keep the total, discrete order of integers. On the contrary, it is more flexible for the user to assume a generic partial ordered set \verb+(univt,lteq)+, and to relax the successor relation to being strictly greater and the max to a generic upper bound. Satisfiability of the set is now equivalent to the abscence of a strict cicle.
+over constraints over integers induced by the last three predicates. However, to preserve the logical consistency of the system, it is not necessary to keep the total, discrete order of integers. On the contrary, it is more flexible for the user to assume a generic partial ordered set \verb+(univt,lteq)+, and to relax the successor relation to being strictly greater and the max to a generic upper bound. Satisfiability of the set is now equivalent to the abscence of a strict cicle, i.e. of the possibility to derive \verb+ltn U U+ for some universe \verb+U+.
 
-Detecting ciclicity in a graph is an easy job for CHR. Indeed, we took the propagation rules below off-the-shelf.
+Detecting an inconsistency from a set of constraints expressed using strict and lax inequalities is such an easy job for CHR that we basically just had to modify the ``hello world'' example for CHR given on Wikipedia, that simplifies constraints over lax inequalities only. Each constraint propagation rule corresponds to an instance of a characterizing property of the order, i.e. reflexivity, transivity and antisimmetry of \verb+leq+, transitivity and antiriflexivity of \verb+ltn+, and finally inconsistency of \verb+ltn X Y+ with both \verb+ltn Y X+ and \verb+leq Y X+. We only show in the following code a few propagation rules.
 
 \begin{Verbatim}
 kind univt type.
@@ -882,37 +887,16 @@ lt    I J :- ltn I J.
 succ  I J :- ltn I J.           % succ relaxed to <
 max N M X :- leq N X, leq M X.  % max relaxed to any upper bound
 
-mode (leq i i).
-leq (?? as A) (?? as B) :- !,  $constraint (leq A B) [A,B].
-leq A         (?? as B) :- !,  $constraint (leq A B) [B].
-leq (?? as A) B         :- !,  $constraint (leq A B) [A].
-
-mode (ltn i i).
-ltn (?? as A) (?? as B) :- !,  $constraint (ltn A B) [A,B].
-ltn A         (?? as B) :- !,  $constraint (ltn A B) [B].
-ltn (?? as A) B         :- !,  $constraint (ltn A B) [A].
+... /* boilerplate code to delay leq and ltn over flexible terms */
 
 constraint leq ltn {
-  % incompatibility
-  rule (leq X Y) (ltn Y X) <=> false.
-  rule (ltn X Y) (ltn Y X) <=> false.
-  rule (ltn X X) <=> false.
+  % incompatibility                     % irriflexivity
+  rule (leq X Y) (ltn Y X) <=> false.   rule (ltn X X) <=> false.
   
-  % reflexivity
-  rule \ (leq X X).
+  % reflexivity                         % antisymmetry
+  rule \ (leq X X).                     rule (leq X Y) \ (leq Y X) <=> (Y = X).
 
-  % antisymmetry
-  rule (leq X Y) \ (leq Y X) <=> (Y = X).
-
-  % transitivity
-  rule (leq X Y) (leq Y Z) <=> (leq X Z).
-  rule (leq X Y) (ltn Y Z) <=> (ltn X Z).
-  rule (ltn X Y) (leq Y Z) <=> (ltn X Z).
-  rule (ltn X Y) (ltn Y Z) <=> (ltn X Z).
-
-  % idempotence
-  rule (leq X Y) \ (leq X Y).
-  rule (ltn X Y) \ (ltn X Y).
+  ...
 }
 \end{Verbatim}
 
