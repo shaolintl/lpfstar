@@ -122,7 +122,7 @@ built using an ITP is fully sound. However, in practice the user never
 interacts with the kernel and the remaining parts of the system do not
 depend on the behaviour of the kernel. Where the real intelligence of
 the system lies is instead the second layer, called \emph{elaborator}
-or \emph{refiner}~\cite{leanelaborator,bidir,??}.
+or \emph{refiner}~\cite{leanelaborator,bidir}.
 
 In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added?
 We will start by detailing what an elaborator is and why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators. We then present the issues we faced when coding an elaborator in $\lambda$Prolog and how similar issues are dealt with in first order Prolog. We then present ELPI, our extension to $\lambda$Prolog.  Finally we present a kernel and a prototype elaborator for CIC written in ELPI.
@@ -836,7 +836,7 @@ run, no compilation chain).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Towards an elaborator for CIC}\label{sec:elaborator}
-We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{xxx}, with the exception of the handling of universe constraints that follows Coq XXX~\cite{yyy}. For the time being, however, the elaborator can only instantiate metavariables that happear in the term, lacking the possibility of entirely modifying the input term, for example introducing coercions. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of coercions.
+We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that happear in the term, lacking the possibility of entirely modifying the input term, for example introducing coercions. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of coercions.
 
 In place of following Matita and Coq algorithm, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
 
@@ -880,7 +880,7 @@ compat G2 [X2|XS2] T2 G1 [X1|XS1] T1 K :-
 \end{verbatim}
 
 \paragraph{Universe constraints: the \texttt{lt,succ,max} predicates.}
-All three predicates must be delayed when at least one of the arguments is flexible. However, satisfiability of the constraints is a necessary requirement for logical consistency. In case of violation of the constraints, it is indeed easy to encode a form of Russel's paradox~\cite{???}.
+All three predicates must be delayed when at least one of the arguments is flexible. However, satisfiability of the constraints is a necessary requirement for logical consistency. In case of violation of the constraints, it is indeed easy to encode a form of Russel's paradox.
 
 In order to verify satisfiability, we could devise a set of propagation rules
 over constraints over integers induced by the last three predicates. However, to preserve the logical consistency of the system, it is not necessary to keep the total, discrete order of integers. On the contrary, it is more flexible for the user to assume a generic partial ordered set \verb+(univt,lteq)+, and to relax the successor relation to being strictly greater and the max to a generic upper bound. Satisfiability of the set is now equivalent to the abscence of a strict cicle.
