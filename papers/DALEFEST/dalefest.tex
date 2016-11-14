@@ -706,54 +706,49 @@ We put this feature to good use in the next section.
 
 \subsection{Meta level: elegant but overkill}
 
-If we look back the CHR rule syntax
-$S_1 \setminus S_2 ~|~ G \iff S_3$ and its
-declarative semantics $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
-S_2 \iff \bigwedge S_3)$ we remark that one could
-weaken the double implication obtaining
- $\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
-S_2 \Leftarrow \bigwedge S_3)$.  One obtains a semantics that
-is still useful, an intuitively says that $S_3$ is not the most general
-constraint but is a still a sound one.  In other words it lets
-us code heuristics, that is something the user surely wants to
+The operational semantics of the rule
+$S_1 \setminus S_2 ~|~ G \iff S_3$ replaces $S_2$ with $S_3$.
+Therefore its soundness only requires
+$\bigwedge S_1 \wedge G \Rightarrow (\bigwedge
+S_2 \Leftarrow \bigwedge S_3)$. When it is not the case that also
+$\bigwedge S_1 \wedge G \Rightarrow (\bigwedge S_2 \Rightarrow \bigwedge S_3)$,
+the rewriting rule is not complete or, equivalently, the user is only specifying and heuristic that potentially throws away solutions.
+
+Heuristics are something the user surely wants to
 do when extending the elaborator.  Our running example
-is the following emblematic conversion (or better unification) problem
+is the following emblematic conversion (or, better, narrowing) problem
 
 \begin{Verbatim}
 conv (app carrier_of R) integers
 \end{Verbatim}
 
 In CIC a term can pack together types, terms and properties.  In the
-example above \verb+R+ is a single constructor inductive (a record)
-that packs together the group carrier, group operations and their properties.
-In this setting one can clearly see that the generative mode of $\lambda$Prolog corresponds to proof search.  Of course the user may have already built,
-in his library, the ring of integers (a theorem giving one of the many
-solutions to the problem above).
+example above \verb+R+ of type \verb+group+ is to be instantiated with a record
+that packs together the group carrier, the group operations and their properties.
+In this setting one can clearly see that the generative mode of $\lambda$Prolog corresponds to proof search, i.e. the blind enumeration of $\lambda$-terms to build (uninteresting) groups over the integers.  Of course the user is likely to have already built, in his library, the standard ring of integers, and he would like to instruct the system with the heuristics that pick for \verb+R+ that group. The code to do so is the first propagation rule below:
 
 \begin{Verbatim}
 delay (conv (app carrier_of X) Y) on X.
 constraint conv {
   rule \ (conv (carrier_of X) integers) <=> (X = integer_group).
   rule \ (conv (carrier_of X) (intersection A B)) <=>
-    (conv (carrier_of X1) A, conv (carrier_of X2) B,
-     X = intersection_group X1 X2).
+    (conv (carrier_of GA) A, conv (carrier_of GB) B,
+     X = intersection_group GA GB).
 }
 \end{Verbatim}
 
-The second rule is a recursive one that represent the theorem saying
-that the intersection of 2 groups is a group.
+The second rule is a recursive one that exploits the theorem saying
+that the intersection of 2 groups is a group: in order to find a group \verb+X+ whose carrier is the intersection of the two sets \verb+A+ and \verb+B+, the heuristic suggests to recursively discover two groups \verb+GA+ and \verb+GB+ of carrier \verb+A+ and \verb+B+, and to instantiate \verb+X+ with the group intersection of \verb+GA+ and \verb+GB+.
 
 Remark how little we use of CHR in this rule: only one head, no alignment,
 no guard (i.e. no need to freeze).
-Still, these simple rules faitfully model the extension to the elaborator
+Still, these simple rules faithfully model the extension to the elaborator
 of Coq that proved to be key to outstanding formalizations like
 the Odd Order Theorem~\cite{oothm}.  Such formalization declares a 26
 hundreds of rules like these ones.  It goes without saying that
 the efficiency of such rules is critical.
 
-To well support this use case we make the low level primitives that implement
-constraint generation an propagation available in the $\lambda$Prolog
-language directly.
+To achieve efficiency, in this simple scenario we would like to avoid delaying the goal, matching it with a propagation rule, execute the guard at the meta-level, etc. To do so, we will expose in the language the low level primitives that are used in the interpreter to implement constraint generation and propagation. The idea is that, in the restricted scenario above, the user will be able to directly write the propagation rule in the interpreter.
 
 The first primitive is called \verb+mode+ and lets one tag arguments of
 a predicate as input ones.
@@ -794,14 +789,14 @@ The syntax \verb+(?? K L as X)+ seen in \ref{sec:realchr} is also
 available, and lets one access the arguments of a flexible term.
 This lets one extend the conversion predicate (unification in the
 elaborator) to cover terms outside L$_\lambda$.  An emblematic example is
-the following one:
+the following one: \textcolor{red}{CSC: qua non si capisce. È un goal sospeso? È il lhs di una regola di propagazione? Usavi questa sintassi prima per le query, e non può essere una query}
 
 \begin{Verbatim}
 ?- conv (?? F [nat_of_ord x]) T
 \end{Verbatim}
 
 When \verb+x+ never occurs in \verb+T+ alone, only inside the
-\verb+nat_of_ord+ context.  Such example is occurs very frequently
+\verb+nat_of_ord+ context.  Such example occurs very frequently
 in the~\cite{bigop} library for Coq, where theorems about iterated
 operations over finite domains are provided.
 For example the $\sum_{i < 7} (F~i)$ expression hides
@@ -811,6 +806,10 @@ The impossibility to extend the elaborator of Coq with any heuristic
 so solve the goal above makes the use of these lemma painful, since
 one may have to provide \verb+F+ by hand, instead of having it
 automatically inferred.
+
+In Section~\ref{sec:cicelaborator} we will use the low level primitives \verb+mode,delay+ and \verb+is_var+ to implement our elaborator. In some cases, we will combine \verb+mode+ and \verb+delay+ just to implement the high level \verb+delay+ construct. In some other cases we will use \verb+mode+ and pattern matching over the syntax of goals to implement heuristics without triggering delay. 
+
+In all cases, the low level primitives above can be understood in term of the high level language provided before. In particular, semantically \verb+mode+ already acts as the request of delaying the goal when certain inputs are flexible. Then, in the goals that match metavariables, one can either confirm the intention of delaying (via \verb+$delay+), or he can immediately provide a propagation rule by immediately issuing a new query to be executed by the interpreter. In the future we plan to study the elaboration of the syntax based on the low level primitives to the high level syntax and its clean declarative semantics.
 
 \subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
 
