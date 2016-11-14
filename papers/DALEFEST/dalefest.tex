@@ -780,7 +780,7 @@ in the~\cite{bigop} library for Coq, where theorems about iterated
 operations over finite domains are provided.
 For example the $\sum_{i < 7} (F~i)$ expression hides
 the \verb+nat_of_ord+ injection around $i$ (a term of the
-type of $I_7$, a finite subsed of the integers of cardinality $7$).
+type of $I_7$, a finite subset of the integers of cardinality $7$).
 The impossibility to extend the elaborator of Coq with any heuristic
 so solve the goal above makes the use of these lemma painful, since
 one may have to provide \verb+F+ by hand, instead of having it
@@ -977,18 +977,53 @@ The code assumes all metavariable occurrences to be in Miller's pattern fragment
 Several tests already pass, but we are currently still developing the full set of rules that reflect the algorithm developed by Matita. Once completed and made functional equivalent, we plan to test the elaborator written in $\lambda$Prolog against the original one for debugging and performance analysis.
 
 \section{Conclusions and related works}\label{sec:conclusion}
-Related works:
-\begin{enumerate}
-\item Costrutti tipo delay
-\item Logical frameworks (Dedukti, MMT, etc.) e brrr Isabelle
-\item Da qualche parte: il pre-print by Abel sull'elaborator basato su
- constraint e lean che implementa un constraint solver di qualche tipo
-\end{enumerate}
 
-Future works:
-\begin{enumerate}
-\item Parlare di Abella
-\end{enumerate}
+To our knowledge ELPI is the first $\lambda$Prolog implementation extended
+with first class constraints.  The situation is dual for Prolog, where all
+mainstream implementations integrate some constraint solvers.  Moreover,
+the CHR language is typically compiled to Prolog, hence Prolog systems
+can quite easily provide a CHR package.  It is for example the case for
+SWI Prolog~\cite{SWI} and SICStus Prolog~\cite{SICStus}.  Providing to
+the Prolog language primitives of the meta level, like matching, has also
+been tried before.  For example the Picat language, based on the
+B-Prolog~\cite{Bprolog} engine, lets the user chose, for each clause,
+if the head has to me matched or unified with the goal.
+
+While basing the implementation of the kernel of an interactive prover on a
+logical framework (LF) eventually animated by SLD resolution is not new, 
+little has been done to reuse the same technology for the elaborator
+component.  For example MMT~\cite{mmt} ``meta'' system lets one define kernel
+rules in LF, but resorts to the Scala language for the elaborator.
+Isabelle lets one describe the axiom of a logic in an LF framework and
+exposes the higher order unification algorithm to the higher layers of
+the system, like the proof language one.  Incidentally the dominant
+logic implemented in Isabelle is HOL, that lacks dependent types, hence
+needs no term comparison algorithm based narrowing.  Hence, to our knowledge,
+no need to extend such algorithm to encompass more rewriting is perceived,
+and as a consequence no way to extend such algorithm is given to the user.
+The Dudukti~\cite{dedukti} language lets one describe the axiom of a logic
+in LF modulo equational theories.  Unfortunately, at the time of writing,
+the system lacks an elaborator.
+
+Describing the elaborator in terms of constraints was a choice first 
+made in Agda version 2~\cite{Agda} and more recently in Lean~\cite{Lean}.
+Both system implement they own, ad-hoc, constraint solver, the former system in
+Haskell, while the latter in C++.  The approach we follow in the paper
+is to provide a programming platform where constraint and their propagation
+rules are first class, to ease documentation, experimentation and extension
+of the implemented system.
+
+For an early prototype of the elaborator presented in this paper,
+the typing constraint propagation rule implementing uniqueness of
+typing was proved correct in Abella~\cite{Abella}.  
+The intricacy of the proof was mainly due to the combination of
+contexts of dependently typed entries and the combination of two
+typing constraints.  The main weak point of the system was the lack of
+small step semantics for $\lambda$Prolog programs, forcing us to XXX.\\
+As a future work we hope to fully prove correct, although not complete, the
+elaborator component, so to call into question the standard design if
+interactive provers: what is the point of having a kernel component if the
+elaborator is proved to only generate terms accepted by it?
 
 \label{sect:bib}
 \bibliographystyle{plain}
