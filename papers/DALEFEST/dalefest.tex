@@ -14,7 +14,7 @@
   Inria Sophia-Antipolis, \email{Enrico.Tassi@inria.fr}}
 
 \authorrunning{F. Guidi, C. Sacerdoti Coen, E. Tassi}
-\titlerunning{The pragmatic construction of ELPI}
+\titlerunning{Implementing Type Theory in HOCLP}
 
 \begin{document}
 \maketitle
@@ -410,7 +410,7 @@ If we run the following query, the computation diverges:
 
 \textcolor{red}{Il salto fra la frase prima e addirittura l'inizio di una sottosezione è atroce. Magari iniziare la sottosezione prima di ``Consider''?}
 
-\subsection{Generative semantics and constraint declaration} %%%%%%%%%%%
+\subsection{From generative semantics to constraints} %%%%%%%%%%%
 \label{sec:delay}
 
 The rule for $\lambda$-abstraction applies fine, but generates the problematic
@@ -497,7 +497,7 @@ managing explicitly backtracking and goal resumption.  More that that, the autom
 constraints makes it impossible to obtain an ill-typed term by
 instantiation: the code is correct by construction.  Last, it lets one selectively disable the undesired generative semantics of predicates like \verb+of,lt,+\ldots.
 
-\subsection{Meta theory and constraint propagation} %%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Constraint propagation as meta-theorems on ground terms} %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 In many situations, the constraints that accumulate over time are not
 independent, and sometimes sets of constraints can be rewritten in
@@ -519,52 +519,58 @@ is resumed (to type check the assigned term).  Alternatively,
 if the two typing constraints clash, one wants the elaborator to
 backtrack immediately.
 
-Prolog implementations that provide the notion of constraint typically
+Languages (or libraries for existing languages) that allow constraints declaration usually
 come with ad-hoc \emph{constraint solvers} that take care of
 propagating a specific class of constraints (arithmetic, finite
-domain, etc\ldots), and are then called \emph{Constraint Logic
-Programming} (CLP) languages.  For example, the set $\{0 \leq N \leq
+domain, etc\ldots), and are then called \emph{Constraint
+Programming} (CP) languages.  For example, the set $\{0 \leq N \leq
 4, 2 \leq N \leq 5\}$ can be rewritten into $\{2 \leq N \leq 4\}$
 without changing the set of ground solutions.
 
-Most CLPs do not allow the user to define new constraints and
-propagation rules in user space, so only constraints belonging to well
+Most CPs do not allow the user to define new constraints and
+propagation rules in user space: only constraints belonging to well
 known categories can effectively be used.  In our case the constraints
-a strongly tied to the object language, hence programmer must be able
-to describe how constraints are rewritten.
+originate from the meta-theory of the object language we are implementing,
+hence the programmer must be able to declare new kind of constraints and
+specify how constraints are to rewritten according to meta-theorems about the
+object language (e.g. unicity of typing).
 
 Languages to describe sets of rules to manipulate a set of
 constraints have been studied in the literature, and the most well
 known one is certainly CHR (Constraint Handling Rules~\cite{chr}).
-In CHR is a first order language in which the user declares predicates
+CHR is a first order language in which the user declares predicates
 and then gives a set of rewriting rules of the form $S_1 \setminus S_2 ~|~
 G \iff S_3$ whose declarative semantics is that $\bigwedge S_1 \wedge
 G \Rightarrow (\bigwedge S_2 \iff \bigwedge S_3)$ and whose
 operational semantics is to match the current set of constraints
 against both $S_1$ and $S_2$ and, if the clause $G$ holds, replace the
 constraints in $S_2$ with the ones in $S_3$. All syntactic components
-can be omitted: $G$ defaults ot \verb+true+ and the sets $S_1,S_2,S_3$
+can be omitted: $G$ defaults to \verb+true+ and the sets $S_1,S_2,S_3$
 to the empty set. The $\iff$ symbol is also omitted when $S_3$ is, and
 $|$ is omitted when $G$ is. The semantics of the language is completed
 by a strategy that fixes the order in which propagation rules are
 fired and in what cases propagation rules can be backtracked.
 
-Adding to $\lambda$Prolog, in addition to a \verb+delay+ construct to
-generate constraints, a CHR like language to manage them,
+Adding to a $\lambda$Prolog with a \verb+delay+ construct (to declare constraints) a CHR like language to declare constraint propagation rules
 enables the following applications:
 \begin{description}
-\item[forward reasoning during search] When propagation rules are theorems,
-	then they fit well the proof theoretic semantics of $\lambda$Prolog
-	and their application happens forward, while the SLD resolution engine
-	goes backward.
+\item[forward reasoning during search] When propagation rules are theorems
+        over the ground instances,
+	then propagation respect the declarative, proof theoretic semantics
+        of $\lambda$Prolog. In particular, constraint propagation is just a
+        controlled form of forward reasoning, while SLD resolution only
+	does backward reasoning.
 \item[code optimizations given by the meta theory] of the object
-	language.  In the running example uniqueness of typing is key to keep
-	the evarmap linear in the number of missing sub-proofs.
+	language.  In the running example, uniqueness of typing is key to keep
+	the implicit metasenv linear in the number of missing sub-proofs.
+        In turns, this greatly reduces the number of checks to be performed when
+        a metavariable is instantiated, and it allows to directly present to
+        the user the set of constraints as the frontier of the proof search.
 \item[turn checking into inference]  By replacing the
 	predicates \verb+<,max,succ+ with generic order constraints
-	\verb+leq,ltn+ one gets an elaborator that works with floating sorts,
+	\verb+leq,ltn+ one gets an elaborator that works with floating sorts~\cite{algebraic},
 	rather than fixed integers, and maintains an acyclic graph of
-	constraints linking these.
+	constraints linking these. More generically, we can turn type checking into type inference and elaboration.
 \end{description}
 
 At the light of all these considerations we extend the ELPI
@@ -583,28 +589,34 @@ constraint of {
 
 Here \verb+G1 ?- of X T1+ is a constraint (delayed goal) required
 to be present, \verb+G2 ?- of Y T2+ is another one we want to remove.
-The type of \verb+G1+ and \verb+G2+ is \verb+o list+, i.e.
+The type of \verb+G1+ and \verb+G2+ is \verb+list o+, i.e.
 it is a first class representation of the $\lambda$Prolog context
 (that augments the original program).  
 The guard \verb+equiv G1 G2+ is a user defined $\lambda$Prolog program
 checking that the two context are equivalent (i.e.
-compare equal as sets).  \verb+G1 => conv T1 T2+ is
-is sugar for \verb+H1 => ... => HN => conv T1 T2+ where
-\verb+G1 = [H1, ..., HN]+, and is a new goal generated by the rule.
+\textcolor{red}{compare equal as sets CSC:???}).  \verb+G1 => conv T1 T2+ (syntactic sugar for \verb+H1 => ... => HN => conv T1 T2+ where
+\verb+G1 = [H1, ..., HN]+) is the new goal generated by the rule.
 The alignment expressions, \verb+> X ~ Y+, asserts \verb+X+ and \verb+Y+
 are the same meta variable and finds a bijection between the
 eigenvariables (introduced by \verb+pi+ rules) in the two goals.
 
 We say that CHR rules run at the \emph{meta level}, i.e. they have access
-to the syntax of goals and to their context.  Semantically, all flexible
-terms are replaced by fresh constants (we call this operation freezing).
+to the syntax of goals and to their context.  In particular, all flexible
+terms in a constraint are replaced by fresh constants before being inspected
+by a CHR rule (we call this operation freezing). Therefore, the propagation
+rules can inspect the goal, compare frozen metavariables, detect frozen flexible terms etc. without triggering the instantiation of the metavariable. As a comparison, detecting if a term is flexible cannot be done reliably in $\lambda$Prolog. An interpreter for the language can take the meta-level metaphor literally: we implemented constraint propagation by starting a new interpreter that takes in input the guard of the propagation rule and a reflection of the syntax of the goals of the interpreter below. In principle, we could even delay goals in the meta level and propagate them using a meta meta level.
+
 The bijection described by the alignment expression is key to
 manipulate in the same guard (or combine in the new goal) terms
-living in different contexts.  The new goal is defrost before being
-scheduled.
+living in different contexts.
+
 As an implementation detail, heads are \emph{matched} against the
-constraints, and only when matching and alignment succeed, freezing
-takes place and the guard is run.
+constraints by the interpreter, and only when matching and alignment succeed,
+freezing takes place, the meta interpreter is started and the guard is run.
+
+When the meta interpreter halts successfully on the guard, the new goal is
+defrost and it is immediately scheduled for execution in the interpreter.
+Defrosting restores the metavariables originally present in the constraints, and it also creates a new metavariable (in the interpreter) for each new metavariable (in the meta intepreter) that was generated by executing the guard.
 
 For example, if we take the two typing constraints on \verb+P+ above
 and we freeze them we obtain:
@@ -621,8 +633,7 @@ In this simple case there is only one possible bijection
 between the two (singleton) sets of eigenvariables: 
 $x \mapsto z$.
 
-The following query is run to validate the guard of the rule.
-Such query runs in a dedicated $\lambda$Prolog runtime.
+The following query is run in the meta interpreter to validate the guard of the rule.
 
 \begin{Verbatim}
 ?- equiv [of z (sort c0)] [of z (sort c0)]
@@ -643,10 +654,10 @@ second constraint on \verb+P+, that is removed.
 \label{sec:realchr}
 
 Matching of $\lambda$Prolog goals is a delicate matter: eigenvariables
-are fresh names, not hard variables, and their semantics is quite
+are fresh names, not fixed constants, and their semantics is quite
 different~\cite{nabla}.  
 In particular, matching goal $H$ against goal $G$ amounts
-to solving this equation:
+to solving this equation written using the nabla quantifier of~\textcolor{red}{\cite{XXX}}:
 
 \begin{math}
  \nabla x_1\ldots x_n, \mathcal{H} = \nabla y_1\ldots y_m, \mathcal{G}
@@ -679,7 +690,7 @@ outside that fragment.
 In L$_\lambda$ the variables visible by each constraint key are distinct,
 and equating the keys gives a bijection between the names.
 If a CHR rue has $n$ patterns, and each corresponding goal has $m$
-eigenvariables, then the alignment is compute in $O(m^n)$
+eigenvariables, then the alignment is computed in $O(m^n)$
 
 The manual alignment injects all eigenvariables to the disjoint union
 of the eigenvariables visible by each constraint key.  In other words
@@ -687,9 +698,11 @@ the terms bound by the CHR rule's heads share no names: it is
 up to the programmer to eventually relate the names.
 In this case we also let the programmer access the list of terms
 to which the meta variable is applied with the following syntax:
-\verb+(?? K L as X)+.  Here \verb+K+ is the meta variable, while
-\verb+L+ is the list of terms to which it is applied.  We put this
-feature to good use in the next section.
+\verb+(?? K L as X)+.  Here \verb+K+ is the (frozen) meta variable,
+\verb+L+ is the list of terms to which it is applied and \verb+X+ is just
+\verb+K+ applied to \verb+L+. Because we are at the meta-level, this kind of
+inspection of the syntax is again perfectly reasonable and allowed.
+We put this feature to good use in the next section.
 
 \subsection{Meta level: elegant but overkill}
 
