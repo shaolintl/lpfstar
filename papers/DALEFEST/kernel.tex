@@ -1,21 +1,23 @@
-The implementation of weak head reduction given before is well known to be very inefficient, because the body of the abstraction of a $\beta$-redex is immediately and completely traversed when the redex is fired. Moreover, the argument is duplicated once for each occurrence of the bound variable in the body. Finally, the strategy implemented by \verb+whd*+ is call-by-name, that is inefficient per se.
+The implementation of weak head reduction given before is well known to be very inefficient, because the body of the abstraction of a $\beta$-redex is immediately and completely traversed when the redex is fired.\marginpar{Non in teyjus, solo la seconda parte, duplicazione, è rilevante! La terza è legata alla seconda a mio avviso} Moreover, the argument is duplicated once for each occurrence of the bound variable in the body. Finally, the strategy implemented by \verb+whd*+ is call-by-name, that is inefficient per se.
 
-To speed up reduction, we now provide a different implementation based on the reduction machine for call-by-need called WAM in~\cite{beniamino}. The machine is a modified Krivine Abstract Machine (KAM~\cite{kam}) that records in the machine environment both terms and their normal forms, the latter being computed lazily by a new invocation of the reduction machine that is fired only when the normal form is required for the first time, i.e. when the variable bound to that value occurs in head position during reduction.
+To speed up reduction, we now provide a different implementation based on the reduction machine for call-by-need called Wadsworth Abstract Machine~\cite{beniamino}. The machine is a modified Krivine Abstract Machine (KAM~\cite{kam}) that records in the machine environment both terms and their normal forms, the latter being computed lazily by a new invocation of the reduction machine that is fired only when the normal form is required for the first time, i.e. when the variable bound to that value occurs in head position during reduction.
 
-In standard implementations, variables are represented by De Brujin indexes and machine environments are stacks, indexed by the variables. Since we do not use and do not want to use indexes, we took a different solution. The machine environment is represented by a set of \verb+(val N T V NF)+ assumptions that we dinamically add to the $\lambda$Prolog environment using logical implication. Their meaning is that to the variable \verb+N+ we associate a value \verb+V+ of type \verb+T+ and its normal form \verb+NF+. The latter is initialized with a fresh metavariable when the binding is created by a $\beta$-reduction, and it is filled when the value is requested for the first time. To fill the value, we first start a new machine on \verb+V+ and then we decode the final machine state to \verb+NF+, an operation that we call \emph{unwind}.
+In standard implementations, variables are represented by De Bruijn indexes and machine environments are stacks, indexed by the variables. Since we do not use and do not want to use indexes, we take a different approach. The machine environment is represented by a set of \verb+(val N T V NF)+ assumptions that we dinamically add to the $\lambda$Prolog environment using logical implication. Their meaning is that to the variable \verb+N+ we associate a value \verb+V+ of type \verb+T+ and its normal form \verb+NF+. The latter is initialized with a fresh metavariable when the binding for \verb+N+ is destroyed by a $\beta$-reduction, and it is filled in when the value is requested for the first time. To compute the term to be asigned to \verb+NF+ we first start a new machine on \verb+V+ and then we decode the final machine state, an operation that we call \emph{unwind}.  We call a variable \verb+N+ for which a \verb+val N _ _ _+ assumption is present \emph{val-bound}.
 
-In any reasonable implementation of $\lambda$Prolog, fetching the normal form of \verb+x+ from the environment via a call to \verb+val x _ _ NF+ consists in fetching a clause from the current program, that is doubly indexed over the name of the clauses and the value of their first argument (if any). The index is implemented using hash tables. Therefore the look up costs $O(n)$ in the worst case where $n$ is the number of conflicts in the hash table, i.e. the length of the machine environment. This is consistent with the cost of lookup when machines are implemented as stacks and variables as De Brujin indexes. In the average case, however, the look-up is likely to be performed in $O(1)$, even if the constant hidden in the big-O notation is likely to be large.
+Fetching the normal form of \verb+x+ from the environment via a call to \verb+val x _ _ NF+ amounts to fetching a clause from the current program, that is performed efficiently in any reasonable implementation of $\lambda$Prolog thanks to clause indexing.  ELPI, as most Prolog engines, indexes clauses on the head predicate \emph{and its first argument}: since \verb+x+ is a fresh constant there is little risk of having collisions.  Even if the indexing ignores the predicate argument the cost of the lookup is at worst $O(n)$ where $n$ is the size of the reduction machine environment.  In line with what one would obtain by representing the environment as a linked list and variables with De Bruijn indexes.
 
 An assumption $A$ introduced in $\lambda$Prolog via $A \Rightarrow B$ is only visible in $B$. Therefore, once a variable is bound via an assumption $A$ of the form \verb+(val x t n nf)+, we need either 1) to be sure that the rest of the computations that requires \verb+x+ is performed in $B$; or 2) to reintroduce syntactically the binding again around every term that escapes the scope of the assumption.
 
-We force 1) via Continuation Passing Style (CPS): the \verb+whd1+ predicates takes in input the head and stack of the machine together with a continuation \verb+K+, and apply \verb+K+ to the new machine head and stack. Moreover, it also pass to \verb+K+ the list of variables that are bound in $\lambda$Prolog environment. The \verb+whd*+ predicate is also implemented in CPS style, and it is responsible for composing together the lists of variables bound during the computation.
+We force 1) by coding the reduction machine in Continuation Passing Style (CPS): the \verb+whd1+ predicates takes in input the head and stack of the machine together with a continuation \verb+K+, and apply \verb+K+ to the new machine head and stack. Moreover, it also passes to \verb+K+ the list of val-bound variables.
+The \verb+whd*+ predicate is also implemented in CPS style, and it is responsible for composing together the lists of val-bound variables.
 
-The list of variables bound in $\lambda$Prolog environment can be used after the reduction for implementing 2) when 1) is not possible: the \verb+whd_unwind t NF+ computes the normal form \verb+NF+ of \verb+t+ by calling \verb+whd*+ on \verb+t+ passing a continuation that unwinds the final machine state by also wrapping it with local definitions (\verb+abbr ty val n \+ \ldots) for each \verb+(val n ty val _)+ in $\lambda$Prolog environment. An \verb+abbr+, also called \verb+let .. in+ in several functional programming languages, is therefore a construct to capture explicit sharing in the term syntax. Its signature and type-checking rule is:
+Such list of variables is used when reduction is over to end the CPS style by performing 1).  For this purpose we introduce the term constructor for local abbreviations \verb+abbr+ (also called \verb+let .. in+ in several functional programming languages).  For example the \verb+whd_unwind t NF+ predicate computes the normal form \verb+NF+ of \verb+t+ by calling \verb+whd*+ on \verb+t+ and passing a continuation that unwinds the final machine state by introducing the explicit binder \verb+abbr ty val n \ ..+ for each val-bound variable \verb+n+.  The signature and type-checking rule for \verb+abbr+ follow:
 
 \begin{Verbatim}
 type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
 
-of (abbr TY TE F) U :- of TE TY', sub TY' TY, pi x \ of x TY => val x TY TE NF => of (F x) U.
+of (abbr TY TE F) U :-
+ of TE TY', sub TY' TY, pi x \ of x TY => val x TY TE NF => of (F x) U.
 \end{Verbatim}
 
 The code of the reduction machine is the following:
@@ -26,12 +28,12 @@ type whd1 term -> list term -> (list var -> term -> list term -> prop) -> prop.
 % KAM-like rules in CPS style
 whd1 (app M N) S K :- K [] M [N|S].
 whd1 (lam T F1) [N|NS] K :- pi x \ val x T N NF => K [x] (F1 x) NS.
-whd1 X S K :- val X _ N NF, if ($is_flex NF) (whd_unwind N NF), K [] NF S.
+whd1 X S K :- val X _ N NF, if (var NF) (whd_unwind N NF), K [] NF S.
 
 % reflexive, transitive closure
 whd* T1 S1 K :- whd1 T1 S1
  (vl1 \ t1 \ s1 \ whd* t1 s1
- (vl2 \ t2 \ s2 \ sigma VL \ append vl1 vl2 VL, K VL t2 s2)), !.
+  (vl2 \ t2 \ s2 \ sigma VL \ append vl1 vl2 VL, K VL t2 s2)), !.
 whd* T1 S1 K :- K [] T1 S1.
 
 % Whd followed by machine unwinding.
@@ -49,7 +51,7 @@ put_abbr [] NF NF.
 put_abbr [X|XS] I (abbr T N K) :- val X T N _, put_abbr XS I (K X).
 \end{Verbatim}
 
-The predicate \verb+match_sort+ is implemented trivially. The one for \verb+match_arr+ is slightly more delicate: the input \verb+T+ is put in weak head normal form by \verb+whd*+; the continuation retrieves the term and checks that it is a dependent product, retrieving the two subterms; the subterms may contain variables bound in the environment; therefore, before returning them, it is necessary to close them using technique 2) above by means of \verb+abbr+s via \verb+put_abbr+, like \verb+whd_unwind+ does.
+The predicate \verb+match_sort+ is implemented trivially. The one for \verb+match_arr+ is slightly more delicate: the input \verb+T+ is put in weak head normal form by \verb+whd*+; the continuation retrieves the term and checks that it is a dependent product, projecting out the two subterms; the subterms may contain variables bound in the environment; therefore, before returning them, it is necessary to close them using technique 2) above by means of \verb+abbr+s via \verb+put_abbr+, like \verb+whd_unwind+ does.
 
 \begin{Verbatim}
 type match_sort term -> @univ -> prop.
@@ -62,9 +64,14 @@ match_arr T A F :-
   pi x \ put_abbr l (F' x) (F x)).
 \end{Verbatim}
 
-A second optimization we implemented speeds up the conversion check by following the same heuristics implemented in Matita and, similarly, in Coq: in place of putting the two terms to be compared in weak head normal form at the beginning, the two terms are lazily reduced on demand during conversion, that at every step tries $\alpha$-conversion (i.e. $\lambda$Prolog equality) and congruence rules to avoid unnecessary reductions.
+Efficient reduction is not sufficient to obtain a quick term comparison
+routine.  In particular both Matita and Coq implement the same heuristic: in
+place of putting the two terms to be compared in weak head normal form
+immediately, the two terms are lazily reduced on demand during comparison, that
+at every step tries $\alpha$-conversion (i.e. $\lambda$Prolog equality) and
+congruence rules to avoid unnecessary reductions.
 
-In order to perform weak head lazily, we obtain \verb+conv+ and \verb+sub+ as two instances of a \verb+comp+ comparison predicate that works on two reduction machine statuses. The third argument is \verb+eq+ if the intended comparison is \verb+conv+, \verb+leq+ otherwise.
+In order to perform weak head reductions lazily, we obtain \verb+conv+ and \verb+sub+ as two instances of a \verb+comp+ comparison predicate that works on two reduction machine statuses. The third argument is \verb+eq+ if the intended comparison is \verb+conv+ while \verb+leq+ for \verb+sub+.
 
 \begin{Verbatim}
 type conv term -> term -> prop.
