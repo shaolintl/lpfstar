@@ -21,7 +21,7 @@
 \maketitle
 
 \begin{abstract}
-In this paper we are interested in high level programming languages to implement the core components of an interactive theorem prover for a dependently typed language: the kernel --- responsible for type-checking closed terms --- and the elaborator --- that manipulates terms with holes or, equivalently, partial proof terms.
+In this paper we are interested in high-level programming languages to implement the core components of an interactive theorem prover for a dependently typed language: the kernel --- responsible for type-checking closed terms --- and the elaborator --- that manipulates terms with holes or, equivalently, partial proof terms.
 
 In the first part of the paper we confirm that $\lambda$Prolog, the language developed by Miller and Nadathur since the 80s, is extremely suitable for implementing the kernel, even when efficient techniques like reduction machines are employed.
 
@@ -103,7 +103,7 @@ basically the same architecture. At the core of the system there is
 the \emph{kernel}, that is the trusted code base (together with the
 compiler and run-time of the programming language the system is
 written on). The kernel just implements the type-checker together with
-all the judgements required for type-checking, namely: well formation
+all the judgements required for type-checking, namely: well-formation
 of contexts and environments, substitution, reduction, convertibility.
 The last three judgements are necessary because the type system has
 dependent types and therefore types need to be compared up to
@@ -134,7 +134,7 @@ the system lies is instead the second layer, called \emph{elaborator}
 or \emph{refiner}~\cite{leanelaborator,bidir}.
 In Section~\ref{sec:elaborator} we recall what an elaborator does and we explain why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators
 
-In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added? We conclude that $\lambda$Prolog is not suitable and, combining and extending existing ideas in the literature, we introduce the first Constraint Programming extension of $\lambda$Prolog. We also implemented the language extensions in the ELPI system.
+In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high-level programming language to implement an elaborator? If not, what shall be added? We conclude that $\lambda$Prolog is not suitable and, combining and extending existing ideas in the literature, we introduce the first Constraint Programming extension of $\lambda$Prolog. We also implemented the language extensions in the ELPI system.
 
 In Section~\ref{sec:cicelaborator} we work towards an implementation of an elaborator for CIC written in ELPI, obtained extending modularly a kernel presented in Section~\ref{sec:kernel}. The implementation is the first major use case for the language.
 The final Section~\ref{sec:conclusion} contains comparisons with related work and future works.
@@ -174,7 +174,7 @@ of (arr A Bx) (sort K) :-
 \end{Verbatim}
 
 % \textcolor{red}{<BEGIN>}
-The rules above have the merit of being syntax directed, and hence
+The rules above have the merit of being syntax-directed, and hence
 always infer just its most general type, in the sense of Luo~\cite{ecc}.
 % , i.e. with explicit calls to
 % \verb+sub+.  The more widesprad presentation on-paper presentation is more elegant and compact but 
@@ -332,9 +332,9 @@ kernel} (Huet's terminology).
 \item[twins' disagreement]
 Worse than that, such twin components need to agree on ground terms.
 Typically a proof term is incrementally built by the elaborator:
-starting from a meta variable that has the type of
+starting from a metavariable that has the type of
 the conjecture the proof commands make progress by instantiating it
-with partial terms.  Once there are no unresolved meta variables left,
+with partial terms.  Once there are no unresolved metavariables left,
 the ground term is checked, again and in its totality, by the kernel.
 %Bugs in the elaborator are detected by the kernel, letting the user 
 %\textcolor{red}{??? SENTENZA INCOMPLETA}
@@ -345,26 +345,25 @@ automatically fill in gaps~\cite{oothm,unificationhints}, to coerce data from on
 to another~\cite{coercivesubtyping} or to enrich data to resolve mathematical
 abuse of notation~\cite{nonuniformcoercions}. Therefore systems provide
 ad-hoc extension points to increase the capabilities of the elaborator.  The
-languages to write this code are typically high level, declarative, and
+languages to write this code are typically high-level, declarative, and
 try to hide the intricaces of bound variables, metavariables, etc. to the user.
 The global algorithm is therefore split in multiple languages, defying the hope
 for static analysis and documentation of the elaborator.
 \end{description}
 
 %\subsection{The proposed approach: semi shallow embedding}
-\paragraph{The proposed approach: semi shallow embedding.}
+\paragraph{The proposed approach: the semi-shallow embedding.}
 
 The motivation of our research is to improve over the latter issues by
-identifying an high level (logic) programming language suitable for
+identifying an high-level (logic) programming language suitable for
 the implementation of elaborators. In particular:
 \begin{enumerate}
 \item The programming language takes care of the representation of
-	\emph{bindings and metavariables} in the spirit of semi
-	shallow embedding~\cite{holsuperlight},
+	\emph{bindings and metavariables} in the spirit of semi-shallow embedding~\cite{holsuperlight},
 	solving the \textbf{programming platform} issue.
 	It also improves on \textbf{extensibility} by allowing
 	both the core implementors and the users to work on the same,
-	high level code.
+	high-level code.
 	Finally the \textbf{intricacy of elaboration} is be mitigated.
 \item The programming language features a primitive and powerful
 	notion of extensibility: programs are organized into clauses,
@@ -389,18 +388,18 @@ We envisage such language to be a logic one for two reasons:
 first we hope to reuse or at least extend $\lambda$Prolog;
 second we observe that another component of each ITP, the one
 implementing proof commands, can take real advantage from a 
-programming language where backtracking is built in, in
+programming language where backtracking is built-in, in
 particular to write proof commands performing proof search.
 
 The Higher Order Abstract Syntax approach identifies the object
-language binders and the meta language ones, obtaining $\alpha$-conversion
-and $\beta$-reduction for free.  The semi shallow embedding~\cite{holsuperlight} we expect to use in our language
+language binders and the meta-language ones, obtaining $\alpha$-conversion
+and $\beta$-reduction for free.  The semi-shallow embedding~\cite{holsuperlight} we expect to use in our language
 \emph{identifies the metavariables of the object language with the 
-meta variables of $\lambda$Prolog}. Such meta variables already
+metavariables of $\lambda$Prolog}. Such metavariables already
 come in $\lambda$Prolog with automatic instantiation, context management and forms of higher order unification.
 
 At a first sight, the runtime of $\lambda$Prolog seems to already provide
-metavariables and all related operations required for the semi shallow embedding. So does the technique work out of the box? Unfortunately not quite, as we will see in the next section.
+metavariables and all related operations required for the semi-shallow embedding. So does the technique work out of the box? Unfortunately not quite, as we will see in the next section.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{$\lambda$Prolog meets partial terms}\label{sec:problems}
@@ -429,11 +428,11 @@ indefinitely.
 
 The \verb+of+ predicate inherits from Prolog a generative semantics:
 when called recursively on a flexible input, it enumerates all
-instances trying to find the ones that are well typed. Even when 
+instances trying to find the ones that are well-typed. Even when 
 the computation does not diverge, the behaviour obtained is not the one
 expected from an elaborator for an \emph{interactive} prover: the
 elaborator is not meant to fill in the term, unless the choice is
-obliged. On the contrary, it should leave the meta variable not
+obliged. On the contrary, it should leave the metavariable not
 instantiated and should \emph{remember} (in some kind of metasenv) the need for verifying if the
 typing judgement holds later on, when the metavariable gets instantiated. In
 the example above, type-checking \verb+(lam T a\ P a)+ forces the
@@ -513,7 +512,7 @@ In many situations, the constraints that accumulate over time are not
 independent, and sometimes sets of constraints can be rewritten in
 order to simplify them, or detect their unsatisfiability and
 backtrack.
-For example, if our meta variable \verb+P+ does not occur linearly, one 
+For example, if our metavariable \verb+P+ does not occur linearly, one 
 can end up with two distinct typing constraints on it:
 
 \begin{Verbatim}
@@ -538,17 +537,15 @@ Programming} (CP) languages.  For example, the set $\{0 \leq N \leq
 without changing the set of ground solutions.
 
 Most CPs do not allow the user to define new constraints and
-propagation rules in user space: only constraints belonging to well
-known categories can effectively be used.  In our case the constraints
+propagation rules in user space: only constraints belonging to well-known categories can effectively be used.  In our case the constraints
 originate from the meta-theory of the object language we are implementing,
 hence the programmer must be able to declare new kind of constraints and
 specify how constraints are to rewritten according to meta-theorems about the
 object language (e.g. unicity of typing).
 
 Languages to describe sets of rules to manipulate a set of
-constraints have been studied in the literature, and the most well
-known one is certainly CHR (Constraint Handling Rules~\cite{chr}).
-CHR is a first order language in which the user declares predicates
+constraints have been studied in the literature, and the most well-known one is certainly CHR (Constraint Handling Rules~\cite{chr}).
+CHR is a first-order language in which the user declares predicates
 and then gives a set of rewriting rules of the form $S_1 \setminus S_2 ~|~
 G \iff S_3$ whose declarative semantics is that $\bigwedge S_1 \wedge
 G \Rightarrow (\bigwedge S_2 \iff \bigwedge S_3)$ and whose
@@ -561,7 +558,7 @@ $|$ is omitted when $G$ is. The semantics of the language is completed
 by a strategy that fixes the order in which propagation rules are
 fired and in what cases propagation rules can be backtracked.
 
-Adding to a $\lambda$Prolog with a \verb+delay+ construct (to declare constraints) a CHR like language to declare constraint propagation rules
+Adding to a $\lambda$Prolog with a \verb+delay+ construct (to declare constraints) a CHR-like language to declare constraint propagation rules
 enables the following applications:
 \begin{description}
 \item[forward reasoning during search] When propagation rules are theorems
@@ -570,7 +567,7 @@ enables the following applications:
         of $\lambda$Prolog. In particular, constraint propagation is just a
         controlled form of forward reasoning, while SLD resolution only
 	does backward reasoning.
-\item[code optimizations given by the meta theory] of the object
+\item[code optimizations given by the meta-theory] of the object
 	language.  In the running example, uniqueness of typing is key to keep
 	the implicit metasenv linear in the number of missing sub-proofs.
         In turn, this greatly reduces the number of checks to be performed when
@@ -609,14 +606,14 @@ checking that the two context are equivalent (i.e.
 contain the same items, disregarding order and multiplicity).  \verb+G1 => conv T1 T2+ (syntactic sugar for \verb+H1 => ... => HN => conv T1 T2+ where
 \verb+G1 = [H1, ..., HN]+) is the new goal generated by the rule.
 The alignment expressions, \verb+> X ~ Y+, asserts \verb+X+ and \verb+Y+
-are the same meta variable and finds a bijection between the
+are the same metavariable and finds a bijection between the
 eigenvariables (introduced by \verb+pi+ rules) in the two goals.
 
-We say that CHR rules run at the \emph{meta level}, i.e. they have access
+We say that CHR rules run at the \emph{meta-level}, i.e. they have access
 to the syntax of goals and to their context.  In particular, all flexible
 terms in a constraint are replaced by fresh constants before being inspected
 by a CHR rule (we call this operation freezing). Therefore, the propagation
-rules can inspect the goal, compare frozen metavariables, detect frozen flexible terms etc. without triggering the instantiation of the metavariable. As a comparison, detecting if a term is flexible cannot be done reliably in $\lambda$Prolog. An interpreter for the language can take the meta-level metaphor literally: we implemented constraint propagation by starting a new interpreter that takes in input the guard of the propagation rule and a reflection of the syntax of the goals of the interpreter below. In principle, we could even delay goals in the meta level and propagate them using a meta meta level.
+rules can inspect the goal, compare frozen metavariables, detect frozen flexible terms etc. without triggering the instantiation of the metavariable. As a comparison, detecting if a term is flexible cannot be done reliably in $\lambda$Prolog. An interpreter for the language can take the meta-level metaphor literally: we implemented constraint propagation by starting a new interpreter that takes in input the guard of the propagation rule and a reflection of the syntax of the goals of the interpreter below. In principle, we could even delay goals in the meta-level and propagate them using a meta-meta-level.
 
 The bijection described by the alignment expression is key to
 manipulate in the same guard (or combine in the new goal) terms
@@ -624,11 +621,11 @@ living in different contexts.
 
 As an implementation detail, heads are \emph{matched} against the
 constraints by the interpreter, and only when matching and alignment succeed,
-freezing takes place, the meta interpreter is started and the guard is run.
+freezing takes place, the meta-interpreter is started and the guard is run.
 
-When the meta interpreter halts successfully on the guard, the new goal is
+When the meta-interpreter halts successfully on the guard, the new goal is
 defrost and it is immediately scheduled for execution in the interpreter.
-Defrosting restores the metavariables originally present in the constraints, and it also creates a new metavariable (in the interpreter) for each new metavariable (in the meta intepreter) that was generated by executing the guard.
+Defrosting restores the metavariables originally present in the constraints, and it also creates a new metavariable (in the interpreter) for each new metavariable (in the meta-intepreter) that was generated by executing the guard.
 
 For example, if we take the two typing constraints on \verb+P+ above
 and we freeze them we obtain:
@@ -638,14 +635,14 @@ of x (sort c0) ?- of (c1 x) (arr x _\ x)
 of z (sort c0) ?- of (c1 z) (arr (c2 z) y\ c3 z y)
 \end{Verbatim}
 
-Note that equal meta variables are frozen with the same fresh
+Note that equal metavariables are frozen with the same fresh
 constant.  Eigenvariables are left untouched by freezing, it is
 the work of the alignment phase to make sense of them.
 In this simple case there is only one possible bijection
 between the two (singleton) sets of eigenvariables: 
 $x \mapsto z$.
 
-The following query is run in the meta interpreter to validate the guard of the rule.
+The following query is run in the meta-interpreter to validate the guard of the rule.
 
 \begin{Verbatim}
 ?- equiv [of z (sort c0)] [of z (sort c0)]
@@ -678,7 +675,7 @@ to solving this equation written using the nabla quantifier of~\cite{nabla}:
 
 In the general case it is closely related to equivariate unification
 that is known to be a NP hard~\cite{Cheney2004} problem.  While being
-an elegant high level language, CHR is not efficient.  It is estimated
+an elegant high-level language, CHR is not efficient.  It is estimated
 be on average 100 times slower than conventional programming
 languages.  If, by hangling higher order constraints, we make its core
 operation, matching, even more expensive, we are unlikely to obtain a
@@ -686,14 +683,14 @@ working system.
 
 Providentially the use case that drove our design seems to be on a lucky
 spot: all relevant names are visible by the key of the delayed goal.
-Indeed, in the Curry-Howard homomorphism, a meta variable represents a
+Indeed, in the Curry-Howard homomorphism, a metavariable represents a
 sequent, and its proof (and type) can only use variables in scope of
-the meta variable.  The design choice we make is to forbid the
+the metavariable.  The design choice we make is to forbid the
 $\nabla$ quantifier in the patterns of CHR rules, and implicitly consider as many
 $\nabla$ quantifications as eigenvariables visible to the key variable
 of constraint being matched by the CHR head.  This way we can impose
 the trivial bijection between the names in the pattern and the names
-in the constraint.  Also, all patterns use distinct meta variables, so
+in the constraint.  Also, all patterns use distinct metavariables, so
 all injections are trivial.  In other words, names are only dealt with
 in the alignment.
 We support two form of alignments: one ``automatic'' based on the
@@ -710,8 +707,8 @@ of the eigenvariables visible by each constraint key.  In other words
 the terms bound by the CHR rule's heads share no names: it is
 up to the programmer to eventually relate the names.
 In this case we also let the programmer access the list of terms
-to which the meta variable is applied with the following syntax:
-\verb+(?? K L as X)+.  Here \verb+K+ is the (frozen) meta variable,
+to which the metavariable is applied with the following syntax:
+\verb+(?? K L as X)+.  Here \verb+K+ is the (frozen) metavariable,
 \verb+L+ is the list of terms to which it is applied and \verb+X+ is just
 \verb+K+ applied to \verb+L+. Because we are at the meta-level, this kind of
 inspection of the syntax is again perfectly reasonable and allowed.
@@ -739,7 +736,7 @@ conv (app carrier_of R) integers
 In CIC a term can pack together types, terms and properties.  In the
 example above \verb+R+ of type \verb+group+ is to be instantiated with a record
 that packs together the group carrier, the group operations and their properties.
-In this setting one can clearly see that the generative mode of $\lambda$Prolog corresponds to proof search, i.e. the blind enumeration of $\lambda$-terms to build (uninteresting) groups over the integers.  Of course the user is likely to have already built, in his library, the standard ring of integers, and he would like to instruct the system with the heuristics that pick for \verb+R+ that group. The code to do so is the first propagation rule below:
+In this setting one can clearly see that the generative mode of $\lambda$Prolog corresponds to proof search, i.e. the blind enumeration of $\lambda$-terms to build (uninteresting) groups over the integers.  Of course the user is likely to have already built, in his/her library, the standard ring of integers, and he would like to instruct the system with the heuristics that pick for \verb+R+ that group. The code to do so is the first propagation rule below:
 
 \begin{Verbatim}
 delay (conv (app carrier_of X) Y) on X.
@@ -774,10 +771,10 @@ mode (of i o).
 The result is that arguments marked as input are \emph{matched}
 against the corresponding arguments in the goal, exactly as the
 CHR engine matches the heads of a rule against constraints (without
-instantiating any meta variable occurring in the constraints).
+instantiating any metavariable occurring in the constraints).
 This let us write programs like the following one without risking that
 the first two rule ``generate'' the input.  Of course the right
-hand side of the clauses can instantiate meta variables.
+hand side of the clauses can instantiate metavariables.
 
 \begin{Verbatim}
 of (lam T F) T :- ...
@@ -821,9 +818,9 @@ so solve the goal above makes the use of these lemma painful, since
 one may have to provide \verb+F+ by hand, instead of having it
 automatically inferred.
 
-In Section~\ref{sec:cicelaborator} we use the low level primitives \verb+mode+, \verb+delay+ and \verb+var+ to implement our elaborator. In some cases, we combine \verb+mode+ and \verb+delay+ just to implement the high level \verb+delay+ construct. In some other cases we use \verb+mode+ and pattern matching over the syntax of goals to implement heuristics without triggering delay. 
+In Section~\ref{sec:cicelaborator} we use the low level primitives \verb+mode+, \verb+delay+ and \verb+var+ to implement our elaborator. In some cases, we combine \verb+mode+ and \verb+delay+ just to implement the high-level \verb+delay+ construct. In some other cases we use \verb+mode+ and pattern matching over the syntax of goals to implement heuristics without triggering delay. 
 
-In all cases, the low level primitives above can be understood in term of the high level language provided before. In particular, semantically \verb+mode+ already acts as the request of delaying the goal when certain inputs are flexible. Then, in the goals that match metavariables, one can either confirm the intention of delaying (via \verb+$delay+), or he can provide a propagation rule by immediately issuing a new query to be executed by the interpreter. In the future we plan to study the elaboration of the syntax based on the low level primitives to the high level syntax and its clean declarative semantics.
+In all cases, the low level primitives above can be understood in term of the high-level language provided before. In particular, semantically \verb+mode+ already acts as the request of delaying the goal when certain inputs are flexible. Then, in the goals that match metavariables, one can either confirm the intention of delaying (via \verb+$delay+), or he can provide a propagation rule by immediately issuing a new query to be executed by the interpreter. In the future we plan to study the elaboration of the syntax based on the low level primitives to the high-level syntax and its clean declarative semantics.
 
 %\subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
 \paragraph{ELPI = $\lambda$Prolog + CHR.}\label{sec:elpi}
@@ -978,7 +975,7 @@ On \verb+match_sort+ and \verb+match_arr+ there is no consequence: the metavaria
 
 Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic always favours projections to mimic (in Huet's terminology). Further heuristics are used in Matita to avoid projecting over flexible arguments, to make unification more predictable to the user. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interacting with the ITP.
 
-The following code shows the clauses that deal with a flexible term (on the left hand side) to be unified with a rigid one on the right hand side. A simmetric set of rules is required for the dual case, and the code can obviously be unified with minor effort. Additional rules, omitted here, are required to deal with the flexible-flexible case.
+The following code shows the clauses that deal with a flexible term (on the left-hand side) to be unified with a rigid one on the right-hand side. A simmetric set of rules is required for the dual case, and the code can obviously be unified with minor effort. Additional rules, omitted here, are required to deal with the flexible-flexible case.
 
 \begin{Verbatim}
 mode (comp i i i i i).
@@ -1036,7 +1033,7 @@ mainstream implementations integrate some constraint solvers.  Moreover,
 the CHR language is typically compiled to Prolog, hence Prolog systems
 can quite easily provide a CHR package.  It is for example the case for
 SWI Prolog~\cite{SWI} and SICStus Prolog~\cite{SICStus}.  Providing to
-the Prolog language primitives of the meta level, like matching, has also
+the Prolog language primitives of the meta-level, like matching, has also
 been tried before.  For example the Picat language, based on the
 B-Prolog~\cite{Bprolog} engine, lets the user chose, for each clause,
 if the head has to be matched or unified with the goal.
