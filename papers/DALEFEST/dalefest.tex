@@ -336,8 +336,8 @@ for static analysis and documentation of the elaborator.
 
 \subsection{The proposed approach: semi shallow embedding}
 
-The motivation of our research is to try to improve over the latter issues.  We
-propose to identifying an high level (logic) programming language suitable for
+The motivation of our research is to improve over the latter issues by
+identifying an high level (logic) programming language suitable for
 the implementation of elaborators. In particular:
 \begin{enumerate}
 \item The programming language takes care of the representation of
@@ -355,8 +355,8 @@ the implementation of elaborators. In particular:
 	elaborator. On the contrary they are extended to cover partial terms,
 	solving the \textbf{code duplication} issue.
 	Also, the \textbf{twins' disagreement} problem becomes less severe,
-	since most code is shared.
-	At the same time \textbf{extensibility of the elaborator}
+	since most code is shared, and
+	\textbf{extensibility of the elaborator}
 	become less ad-hoc: the user simply declares new clauses.
 \item Finally the programming language has a clean semantics, making it
 	easy to prove that the extensions to the kernel
@@ -376,14 +376,13 @@ particular to write proof commands performing proof search.
 
 The Higher order Abstract Syntax approach identifies the object
 language binders and the meta language ones, obtaining $\alpha$-conversion
-and $\beta$-reduction for free.  The semi shallow embedding we propose
+and $\beta$-reduction for free.  The semi shallow embedding~\cite{holsuperlight} we expect to use in our language
 \emph{identifies the metavariables of the object language with the 
-meta variables of $\lambda$Prolog}.  Indeed such meta variables already
-come with automatic instantiation and context management.
+meta variables of $\lambda$Prolog}. Such meta variables already
+come in $\lambda$Prolog with automatic instantiation, context management and forms of higher order unification.
 
 At a first sight, the runtime of $\lambda$Prolog seems to already provide
-an implementation of the metasenv data structure, and all related operations.
-Does this idea work out of the box? Unfortunately not quite.
+metavariables and all related operations required for the semi shallow embedding. So does the technique work out of the box? Unfortunately not quite, as we will see in the next section.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{$\lambda$Prolog meets partial terms}\label{sec:problems}
@@ -394,7 +393,7 @@ syntax containing binders. Does it work when applied to data that is
 meant to contain existentially quantified metavariables too?
 
 Consider the $\lambda$-term \verb+(lam a\ P a)+ that encodes a
-partial proof of $\forall A, A \to A$.
+partial proof of $\forall A, A \Rightarrow A$.
 If we run the following query, the computation diverges:
 
 \begin{Verbatim}
