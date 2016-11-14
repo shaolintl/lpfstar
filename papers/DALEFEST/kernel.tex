@@ -100,5 +100,5 @@ We implemented all the extensions mentioned in a modular way. To activate one ex
 We omit the implementation of the extensions in the paper. All together, they provide a kernel that is functionally equivalent to the one of Matita. The reduction strategies implemented differ though, the one of Matita being more complex than call-by-need. We plan in the future to synchronize the two strategies in order to compare the performance of the two kernels.
 
 To test the kernel, we branched it to Matita, feeding it with every term that is type-checked by Matita when checking the arithmetic library of the system.
-
-\textcolor{red}{XXXXXXXXXXXXX parlare dei tempi}
+According to our measurements the kernel of Matita is 17 times faster than the
+kernel presented in this paper. \marginpar{lines of code? positivity/termination checks?}

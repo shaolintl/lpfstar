@@ -1022,6 +1022,14 @@ Several tests already pass, but we are currently still developing the full set o
 
 \section{Conclusions and related works}\label{sec:conclusion}
 
+In this paper we validated $\lambda$Prolog as a good language to implement
+the type checker (kernel) of a fully fledged type theory like the Calculus of
+Inductive Constructions.  In order to implement an elaborator, i.e. a type
+checker for partial terms, we extended the $\lambda$Prolog with constructs to
+turn goals into constraints and we add a CHR like language to manipulate
+the set of constraints.  We implement the proposed extensions in the ELPI
+system and use them to extend, in a modular way, the kernel into an elaborator.
+
 To our knowledge ELPI is the first $\lambda$Prolog implementation extended
 with first class constraints.  The situation is dual for Prolog, where all
 mainstream implementations integrate some constraint solvers.  Moreover,
@@ -1062,9 +1070,14 @@ using the Abella~\cite{Abella} theorem prover to mechanically check
 its correctness.
 In particular, Abella can be used to prove the soundness of all constraint propagation rules. For example, for an early prototype of the elaborator presented
 in this paper, the typing constraint propagation rule implementing uniqueness of
-typing was proved correct in Abella. However, the current version of Abella reasons on the big step operational semantics of $\lambda$Prolog programs without cuts. Because delaying a goal means interrupting execution in the middle, the small step version of the operational semantics would be the appropriate tool to use instead. For example, in the aforementioned proof of unicity of typing, we had to assume a certain invariant on the $\lambda$Prolog context that is the context of the delayed typing sequent. In order to know that the invariant really holds during computation, we need to prove that, if it holds initially, it holds after any number of small execution steps. Currently, this statement cannot even be stated in Abella. In the future, we would like to re-design Abella around a small step operational semantics to overcome this limitation and also to be able to reason over cuts.
+typing was proved correct in Abella. However, the current version of Abella reasons on the big step operational semantics of $\lambda$Prolog programs without cuts. Because delaying a goal means interrupting execution in the middle, the small step version of the operational semantics would be the appropriate tool to use instead. For example, in the aforementioned proof of uniqueness of typing, we had to assume a certain invariant on the $\lambda$Prolog context that is the context of the delayed typing sequent. In order to know that the invariant really holds during computation, we need to prove that, if it holds initially, it holds after any number of small execution steps. Currently, this statement cannot even be stated in Abella. In the future, we would like to re-design Abella around a small step operational semantics to overcome this limitation and also to be able to reason over cuts.
 
-As a future work we hope in Abella to fully prove correct, although not complete, the
+We plan to compare in disciplined way the performance of the elaborator
+of Matita with the one presented in this paper, to precisely size the
+trade-off between the programming abstractions offered by the
+HOCLP language we have implemented and their runtime cost.
+
+As another future work we hope in Abella to fully prove correct, although not complete, the
 elaborator component, so to call into question the standard design of
 interactive provers: what is the point of having a kernel component if the
 elaborator is proved to only generate terms accepted by it?
