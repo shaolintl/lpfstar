@@ -8,7 +8,7 @@ Fetching the normal form of \verb+x+ from the environment via a call to \verb+va
 
 An assumption $A$ introduced in $\lambda$Prolog via $A \Rightarrow B$ is only visible in $B$. Therefore, once a variable is bound via an assumption $A$ of the form \verb+(val x t n nf)+, we need either 1) to be sure that the rest of the computations that requires \verb+x+ is performed in $B$; or 2) to reintroduce syntactically the binding again around every term that escapes the scope of the assumption.
 
-We force 1) by coding the reduction machine in Continuation Passing Style (CPS): the \verb+whd1+ predicates takes in input the head and stack of the machine together with a continuation \verb+K+, and apply \verb+K+ to the new machine head and stack. Moreover, it also passes to \verb+K+ the list of val-bound variables.
+We force 1) by coding the reduction machine in Continuation Passing Style (CPS): the \verb+whd1+ predicate takes in input the head and stack of the machine together with a continuation \verb+K+, and apply \verb+K+ to the new machine head and stack. Moreover, it also passes to \verb+K+ the list of val-bound variables.
 The \verb+whd*+ predicate is also implemented in CPS style, and it is responsible for composing together the lists of val-bound variables.
 
 Such list of variables is used when reduction is over to end the CPS style by performing 1).  For this purpose we introduce the term constructor for local abbreviations \verb+abbr+ (also called \verb+let .. in+ in several functional programming languages).  For example the \verb+whd_unwind t NF+ predicate computes the normal form \verb+NF+ of \verb+t+ by calling \verb+whd*+ on \verb+t+ and passing a continuation that unwinds the final machine state by introducing the explicit binder \verb+abbr ty val n \ ..+ for each val-bound variable \verb+n+.  The signature and type-checking rule for \verb+abbr+ follow:
@@ -95,7 +95,7 @@ comp T1 S1 D T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ comp T1 S1 D t2 s2), !.
 \end{Verbatim}
 
 \paragraph{Extensions with global definitions, declarations, primitive inductive types, case analysis and structural recursive definitions.}
-We implemented all the extensions mentioned in a modular way. To activate one extension, it is sufficient to accumulate in the kernel a $\lambda$Prolog file that adds new constructors to the \verb+term+ and to the reduction machine stack type, and the relative clauses to the \verb+whd1, conv+ and \verb+of+ predicates.
+We implemented all the extensions mentioned in a modular way. To activate one extension, it is sufficient to accumulate in the kernel a $\lambda$Prolog file that adds new constructors to the \verb+term+ and to the reduction machine stack type, and the relative clauses to the \verb+whd1+, \verb+conv+ and \verb+of+ predicates.
 
 We omit the implementation of the extensions in the paper. All together, they provide a kernel that is functionally equivalent to the one of Matita. The reduction strategies implemented differ though, the one of Matita being more complex than call-by-need. We plan in the future to synchronize the two strategies in order to compare the performance of the two kernels.
 

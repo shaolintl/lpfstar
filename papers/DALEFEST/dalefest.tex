@@ -49,20 +49,19 @@ as a CLP extension to a kernel written in plain $\lambda$Prolog.
 
 \paragraph{A pragmatic reconstruction of $\lambda$Prolog.}
 
-In~\cite{jlp98} Belleannée et. alt. propose a pragmatic reconstruction
+In~\cite{jlp98} Belleannée et. al. propose a pragmatic reconstruction
 of $\lambda$Prolog~\cite{lambdap1,lambdap2,lambdap3}, the Higher Order
 Logic Programming (HOLP) language introduced by Dale Miller and
 Gopalan Nadathur in the '80s.
 Their conclusion is that $\lambda$Prolog can be characterized as the
 minimal extension of Prolog that allows to program by structural
 induction on $\lambda$-terms. According to their reconstruction, in
-order to achieve that goal, Prolog needs to first be augmented with
+order to achieve that goal, Prolog needs to be first augmented with
 $\lambda$-abstractions in the term syntax; then types are added to
 drive full higher-order unification; then universal quantification in
 goals and $\eta$-equivalence are required to express relations between
 $\lambda$-abstractions and their bodies; and finally implication in
-goals is needed \textcolor{red}{to allow for structural induction definitions of
-predicates}.
+goals is needed to allow for definitions of predicates by structural induction.
 
 By means of $\lambda$-abstractions in terms, $\lambda$Prolog can
 easily encode all kind of binders without the need to take care of
@@ -130,8 +129,8 @@ The kernel is ultimately responsible for guaranteeing that a proof
 built using an ITP is fully sound. However, in practice the user never
 interacts with the kernel and the remaining parts of the system do not
 depend on the behaviour of the kernel. Where the real intelligence of
-the system lies is instead the second layer, called \emph{elaborator}
-or \emph{refiner}~\cite{leanelaborator,bidir}.
+the system lies is instead in the second layer, called \emph{elaborator}
+or \emph{refiner}~\cite{Lean,bidir}.
 In Section~\ref{sec:elaborator} we recall what an elaborator does and we explain why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators
 
 In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high-level programming language to implement an elaborator? If not, what shall be added? We conclude that $\lambda$Prolog is not suitable and, combining and extending existing ideas in the literature, we introduce the first Constraint Programming extension of $\lambda$Prolog. We also implemented the language extensions in the ELPI system.
@@ -144,7 +143,7 @@ The final Section~\ref{sec:conclusion} contains comparisons with related work an
 We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic PTS that also allows cumulativity between universes and dependent products that are covariant in the second argument. Then we instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{ecc} and the PTS of CIC, and then we modularly extend the type-checker to the whole CIC by adding inductive types as well.
 
 \paragraph{Term representation and type-checking rules}
-We start identifying syntactically types and terms, adding a new constructor for sorts of the PTS and refining \verb+arr+ to the dependently typed product.
+We start identifying syntactically types and terms, adding a new constructor for sorts of the PTS and by refining \verb+arr+ to the dependently typed product.
 \verb+@univ+ is a macro (in the syntax of the ELPI interpreter~\cite{elpiLPAR}) that will be instantiated in the file that implements the PTS, for example with the type of integers.
 
 \begin{Verbatim}
@@ -174,8 +173,7 @@ of (arr A Bx) (sort K) :-
 \end{Verbatim}
 
 % \textcolor{red}{<BEGIN>}
-The rules above have the merit of being syntax-directed, and hence
-always infer just its most general type, in the sense of Luo~\cite{ecc}.
+The rules above have the merit of being syntax-directed, never requiring backtracking and always inferring the most general type, in the sense of Luo~\cite{ecc}.
 % , i.e. with explicit calls to
 % \verb+sub+.  The more widesprad presentation on-paper presentation is more elegant and compact but 
 % uses in a fundamental way non determinism (hence results in too much
@@ -240,7 +238,7 @@ sub-whd (arr A1 F1) (arr A2 F2) :- conv A1 A2, pi x\ sub (F1 x) (F2 x).
 %ECC~\cite{luo}, in 22 lines, wow!
 
 \paragraph{Defining the PTS}\label{sec:eccpts}
-To obtain the kernel, the programmer just needs to accumulate together the $\lambda$Prolog file that implements the type-checking rules, the one that deals with reduction and conversion and a final file containing the definition of a particular PTS. The latter file just needs to implement the \verb+succ+, \verb+max+ and \verb+lt+ predicate over universes.
+To obtain the kernel, the programmer just needs to accumulate together the $\lambda$Prolog file that implements the type-checking rules, the one that deals with reduction and conversion, and a final file containing the definition of a particular PTS. The latter file just needs to implement the \verb+succ+, \verb+max+ and \verb+lt+ predicates over universes.
 
 For example, the following lines define the predicative hierarchy of Luo's ECC,
 using the integer $i$ to represent the universe Type$_i$. The \verb+macro+
@@ -252,7 +250,7 @@ max N M M :- N =< M.     lt I J :- I < J.
 max N M N :- M < N.      succ  I J :- J is I + 1.
 \end{Verbatim}
 
-\paragraph{Reduction an conversion rules: an efficient implementation via a reduction machine for call-by-need.}\label{sec:kernelmachine}
+\paragraph{Reduction and conversion rules: an efficient implementation via a reduction machine for call-by-need.}\label{sec:kernelmachine}
 
 \input{kernel}
 
@@ -296,7 +294,7 @@ The elaborators of the majority of the provers mentioned above are all
 implemented according to the same schema: the syntax of terms is augmented with
 explicitly substituted existential variables
 and the judgements of the kernel are re-implemented from scratch, generalizing
-them to take in account metavariables and elaboration.
+them to take into account metavariables and elaboration.
 
 In particular the elaborator code works on two new data types: one for partial terms and one, called \emph{metasenv}, that assigns to metavariables a typing judgement (a sequent) and, eventually, an assignment. E.g. a metasenv containing \verb+x:nat, y:bool +$\vdash$\verb+ X x y : nat+ declares \verb+X+ to be an hole to be instantiated only with terms of type \verb+nat+ in the context \verb+x:nat, y:bool+.
 
@@ -312,9 +310,9 @@ narrowing and by threading around the metasenv.
 The state-of-the-art approach is sub-optimal in many ways:
 
 \begin{description}
-\item[programming platform]
+\item[programming platform weakness]
 Much of this new code has very little to do with the prover or the implemented
-logic. In particular code that deals with binders ($\alpha$-conversion,
+logic: in particular code that deals with binders ($\alpha$-conversion,
 capture avoiding substitution, renaming) and code that deals with existentially
 quantified metavariables (explicit substitution management, name capturing
 instantiation).
@@ -346,7 +344,7 @@ to another~\cite{coercivesubtyping} or to enrich data to resolve mathematical
 abuse of notation~\cite{nonuniformcoercions}. Therefore systems provide
 ad-hoc extension points to increase the capabilities of the elaborator.  The
 languages to write this code are typically high-level, declarative, and
-try to hide the intricaces of bound variables, metavariables, etc. to the user.
+try to hide the intricacies of bound variables, metavariables, etc. to the user.
 The global algorithm is therefore split in multiple languages, defying the hope
 for static analysis and documentation of the elaborator.
 \end{description}
@@ -360,16 +358,16 @@ the implementation of elaborators. In particular:
 \begin{enumerate}
 \item The programming language takes care of the representation of
 	\emph{bindings and metavariables} in the spirit of semi-shallow embedding~\cite{holsuperlight},
-	solving the \textbf{programming platform} issue.
+	solving the \textbf{programming platform weakness} issue.
 	It also improves on \textbf{extensibility} by allowing
 	both the core implementors and the users to work on the same,
 	high-level code.
-	Finally the \textbf{intricacy of elaboration} is be mitigated.
+	Finally the \textbf{intricacy of elaboration} is mitigated.
 \item The programming language features a primitive and powerful
 	notion of extensibility: programs are organized into clauses,
 	and new clauses can be freely added.
-	In this way the rules of the kernel are not be re-implemented in the
-	elaborator. On the contrary they are extended to cover partial terms,
+	In this way the rules of the kernel need not to be re-implemented in the
+	elaborator. On the contrary, they are extended to cover partial terms,
 	solving the \textbf{code duplication} issue.
 	Also, the \textbf{twins' disagreement} problem becomes less severe,
 	since most code is shared, and
@@ -380,7 +378,7 @@ the implementation of elaborators. In particular:
 	only accept partial terms that are, once completed,
 	well-typed according
 	to the core set of rules of the kernel.  This completely
-	solve the \textbf{twins' disagreement} problem, making it possible to
+	solves the \textbf{twins' disagreement} problem, making it possible to
 	merge the kernel and the elaborator.
 \end{enumerate}
 
@@ -462,7 +460,7 @@ system delays unification problems outside L$_\lambda$ and implements a complex
 machinery to wake up delayed goals that re-enter the fragment, but does not
 expose any primitive to delay other kind of goals.
 
-At the light of all these considerations we extend the ELPI
+In the light of all these considerations we extend the ELPI
 $\lambda$Prolog interpreter with a \verb+delay+ directive that we can use
 as follows:
 
@@ -503,7 +501,7 @@ represents faithfully the metasenv data structure, relieving the
 programmer to manage it himself, threading it through all typing rules and
 managing explicitly backtracking and goal resumption.  Moreover, the automatic resumption of typing
 constraints makes it impossible to obtain an ill-typed term by
-instantiation: the code is correct by construction.  Last, it lets one selectively disable the undesired generative semantics of predicates like \verb+of+, \verb+lt+, \ldots.
+instantiation: the code is correct by construction.  Lastly, it lets one selectively disable the undesired generative semantics of predicates like \verb+of+, \verb+lt+, \ldots.
 
 %\subsection{Constraint propagation as meta-theorems on ground terms} %%%%%%%%%%%%%%%%%%%%%%%%%%
 \paragraph{Constraint propagation as meta-theorems on ground terms.} %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -582,7 +580,7 @@ enables the following applications:
 	constraints linking these. More generically, we can turn type checking into type inference and elaboration.
 \end{description}
 
-At the light of all these considerations we extend the ELPI
+In the light of all these considerations we extend the ELPI
 $\lambda$Prolog interpreter with a higher order constraint propagation
 language inspired by CHR.
 
@@ -602,7 +600,7 @@ The type of \verb+G1+ and \verb+G2+ is \verb+list o+, i.e.
 it is a first class representation of the $\lambda$Prolog context
 (that augments the original program).  
 The guard \verb+equiv G1 G2+ is a user defined $\lambda$Prolog program
-checking that the two context are equivalent (i.e.
+checking that the two contexts are equivalent (i.e.
 contain the same items, disregarding order and multiplicity).  \verb+G1 => conv T1 T2+ (syntactic sugar for \verb+H1 => ... => HN => conv T1 T2+ where
 \verb+G1 = [H1, ..., HN]+) is the new goal generated by the rule.
 The alignment expressions, \verb+> X ~ Y+, asserts \verb+X+ and \verb+Y+
@@ -628,7 +626,7 @@ defrost and it is immediately scheduled for execution in the interpreter.
 Defrosting restores the metavariables originally present in the constraints, and it also creates a new metavariable (in the interpreter) for each new metavariable (in the meta-intepreter) that was generated by executing the guard.
 
 For example, if we take the two typing constraints on \verb+P+ above
-and we freeze them we obtain:
+and we freeze them, we obtain:
 
 \begin{Verbatim}
 of x (sort c0) ?- of (c1 x) (arr x _\ x)
@@ -668,16 +666,15 @@ are fresh names, not fixed constants, and their semantics is quite
 different~\cite{nabla}.  
 In particular, matching goal $H$ against goal $G$ amounts
 to solving this equation written using the nabla quantifier of~\cite{nabla}:
-
-\begin{math}
+$
  \nabla x_1\ldots x_n, \mathcal{H} = \nabla y_1\ldots y_m, \mathcal{G}
-\end{math}
+$.
 
 In the general case it is closely related to equivariate unification
 that is known to be a NP hard~\cite{Cheney2004} problem.  While being
 an elegant high-level language, CHR is not efficient.  It is estimated
 be on average 100 times slower than conventional programming
-languages.  If, by hangling higher order constraints, we make its core
+languages.  If, by handling higher order constraints, we make its core
 operation, matching, even more expensive, we are unlikely to obtain a
 working system.
 
@@ -688,7 +685,7 @@ sequent, and its proof (and type) can only use variables in scope of
 the metavariable.  The design choice we make is to forbid the
 $\nabla$ quantifier in the patterns of CHR rules, and implicitly consider as many
 $\nabla$ quantifications as eigenvariables visible to the key variable
-of constraint being matched by the CHR head.  This way we can impose
+of the constraint being matched by the CHR head.  This way we can impose
 the trivial bijection between the names in the pattern and the names
 in the constraint.  Also, all patterns use distinct metavariables, so
 all injections are trivial.  In other words, names are only dealt with
@@ -748,7 +745,7 @@ constraint conv {
 }
 \end{Verbatim}
 
-The second rule is a recursive one that exploits the theorem saying
+The second rule is recursive and re-phrases the theorem saying
 that the intersection of two groups is a group: in order to find a group \verb+X+ whose carrier is the intersection of the two sets \verb+A+ and \verb+B+, the heuristic suggests to recursively discover two groups \verb+GA+ and \verb+GB+ of carrier \verb+A+ and \verb+B+, and to instantiate \verb+X+ with the group intersection of \verb+GA+ and \verb+GB+.
 
 Remark how little we use of CHR in this rule: only one head, no alignment,
@@ -773,7 +770,7 @@ against the corresponding arguments in the goal, exactly as the
 CHR engine matches the heads of a rule against constraints (without
 instantiating any metavariable occurring in the constraints).
 This let us write programs like the following one without risking that
-the first two rule ``generate'' the input.  Of course the right
+the first two rules ``generate'' the input.  Of course the right
 hand side of the clauses can instantiate metavariables.
 
 \begin{Verbatim}
@@ -805,16 +802,17 @@ rule (G ?- conv (?? F [nat_of_ord x]) T)
      (pi w\ copy (T' x) (T' w))) <=> (F = T')
 \end{Verbatim}
 
-When \verb+x+ never occurs in \verb+T+ alone, only inside the
+\noindent
+where \verb+x+ never occurs in \verb+T+ alone, only inside the
 \verb+nat_of_ord+ context: \verb+T'+ is \verb+T+ where all occurrences
 of \verb+nat_of_ord x+ are bound.  Such example occurs very frequently
-in the~\cite{bigop} library for Coq, where theorems about iterated
+in the library of big operators of Coq~\cite{bigop}, where theorems about iterated
 operations over finite domains are provided.
 For example the $\sum_{i < 7} (F~i)$ expression hides
 the \verb+nat_of_ord+ injection around $i$ (a term of the
 type of $I_7$, a finite subset of the integers of cardinality $7$).
 The impossibility to extend the elaborator of Coq with any heuristic
-so solve the goal above makes the use of these lemma painful, since
+to solve the goal above makes the use of these lemmas painful, since
 one may have to provide \verb+F+ by hand, instead of having it
 automatically inferred.
 
@@ -858,7 +856,7 @@ Second, the module system of Teyjus is not implemented. Only the
 Despite the differences above, we tried very hard to maintain backward
 compatibility with Teyjus and its standard library. Indeed, we are able to
 execute in ELPI all the code from Teyjus that we collected from the Web, up to
-a very few minor changes to the source code, mostly due to 2 and 3.
+a very few minor changes to the source code.
 Last, ELPI is a pure interpreter written in OCaml.  Embedding it into
 larger applications like Coq or Matita is easy (no external program to
 run, no compilation chain).
@@ -866,9 +864,9 @@ run, no compilation chain).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Towards an elaborator for CIC}\label{sec:cicelaborator}
-We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing type casts. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of type casts.
+We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing type casts. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules as they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of type casts.
 
-In place of following the algorithm of Matita and Coq, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
+In place of following the algorithm of Matita and Coq, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be solved later. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
 
 To implement the elaborator, we need to consider all the predicates defined by induction over the shape of terms, and either turn them into constraints to be propagated, or immediately suggest solutions.
 
@@ -920,7 +918,7 @@ makes all eigenvariables distinct.
 All three predicates must be delayed when at least one of the arguments is flexible. However, satisfiability of the constraints is a necessary requirement for logical consistency. In case of violation of the constraints, it is indeed easy to encode a form of Russel's paradox.
 
 In order to verify satisfiability, we could devise a set of propagation rules
-over constraints over integers induced by the last three predicates. However, to preserve the logical consistency of the system, it is not necessary to keep the total, discrete order of integers. On the contrary, it is more flexible for the user to assume a generic partial ordered set \verb+(univt,lteq)+, and to relax the successor relation to being strictly greater and the max to a generic upper bound. Satisfiability of the set is now equivalent to the abscence of a strict cicle, i.e. of the possibility to derive \verb+ltn U U+ for some universe \verb+U+.
+for constraints over integers induced by the last three predicates. However, to preserve the logical consistency of the system, it is not necessary to keep the total, discrete order of integers. On the contrary, it is more flexible for the user to assume a generic partially ordered set \verb+(univt,lteq)+, and to relax the successor relation to being strictly greater and the max to a generic upper bound. Satisfiability of the set is now equivalent to the absence of a strict cycle, i.e. to the possibility to derive \verb+ltn U U+ for some universe \verb+U+.
 
 Detecting an inconsistency from a set of constraints expressed using strict and lax inequalities is such an easy job for CHR that we basically just had to modify the ``hello world'' example for CHR given on Wikipedia, that simplifies constraints over lax inequalities only. Each constraint propagation rule corresponds to an instance of a characterizing property of the order, i.e. reflexivity, transivity and antisimmetry of \verb+leq+, transitivity and antiriflexivity of \verb+ltn+, and finally inconsistency of \verb+ltn X Y+ with both \verb+ltn Y X+ and \verb+leq Y X+. We only show in the following code a few propagation rules.
 
@@ -942,7 +940,7 @@ constraint leq ltn {
 }
 \end{Verbatim}
 
-\paragraph{Reduction: the \texttt{whd1},\texttt{whd*} predicates.}
+\paragraph{Reduction: the \texttt{whd1}, \texttt{whd*} predicates.}
 The predicate \verb+whd*+, defined in terms of \verb+whd1+, computes the normal form of the input. It is used by \verb+match_sort+ and \verb+match_arr+ to verify if the normal form has a given shape. Moreover, it calls itself recursively to compute the normal form of arguments according to the call-by-need strategy.
 
 The typing system we are implementing cannot distinguish between a term and its normal form. Therefore, when computing the normal form of a flexible input \verb+X+, it is meaningless to delay a goal stating that \verb+Y+ is the normal form of \verb+X+, because typing does not distinguish them.
@@ -971,7 +969,7 @@ On \verb+match_sort+ and \verb+match_arr+ there is no consequence: the metavaria
 %whd1 T S K :- fail.
 %\end{Verbatim}
 
-\paragraph{Term comparison: the \texttt{sub,conv} predicates.}
+\paragraph{Term comparison: the \texttt{sub}, \texttt{conv} predicates.}
 
 Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic always favours projections to mimic (in Huet's terminology). Further heuristics are used in Matita to avoid projecting over flexible arguments, to make unification more predictable to the user. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interacting with the ITP.
 
@@ -1013,7 +1011,7 @@ mcomp (arr TY1 F1) M (arr TY2 F2) :-
  !, comp TY1 [] eq TY2 [], (pi x \ comp (F1 x) [] M (F2 x) []).
 \end{Verbatim}
 
-The code assumes all metavariable occurrences to be in $L_\lambda$. Otherwise, calls like \verb+V1 = app X Y+ in the code may be automatically delayed by ELPI breaking the algorithm.
+The code assumes all metavariable occurrences to be in $L_\lambda$. Otherwise, calls like \verb+V1 = app X Y+ in the code may be automatically delayed by ELPI, thus breaking the algorithm.
 
 Several tests already pass, but we are currently still developing the full set of rules that reflect the algorithm developed by Matita. Once completed and made functional equivalent, we plan to test the elaborator written in $\lambda$Prolog against the original one for debugging and performance analysis.
 
