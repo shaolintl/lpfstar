@@ -165,7 +165,7 @@ of (arr A Bx) (sort K) :-
  match_sort TA I, match_sort TB J, max I J K.
 \end{Verbatim}
 
-Note that the rules are syntax directed, i.e. with explicit calls to
+\textcolor{red}{<BEGIN>}Note that the rules are syntax directed, i.e. with explicit calls to
 \verb+sub+.  The on-paper presentation is more elegant and compact but 
 uses in a fundamental way non determinism (hence results in too much
 backtracking) by simply adding:
@@ -176,10 +176,13 @@ of A C :- of A B, sub B C .
 
 Moreover, integrating \verb+sub+ into \verb+of+ infers multiple types for a term. The syntax directed rules, instead, always infer just its most general type, in the sense of Luo~\cite{ecc}.
 
+\textcolor{red}{<END>
+CSC: NON MI PIACE TANTO IL TESTO. IN ALTERNATIVA CITARE ARTICOLO SU SYNTAX DIRECTED RULES + QUELLO DI LUO}
+
 \paragraph{Reduction and conversion rules: a trivial but inefficient implementation. }\label{sec:inefficient}
 To implement \verb+sub,match_sort,math_arr+, we first implement weak head
 reduction in one step \verb+whd1+ and weak head normalization \verb+whd*+.
-The former is trivial because we reuse the $\beta$-reduction of $\lambda$Prolog for capture avoiding substitution. The two former predicates are then defined by levels: to compare two terms, we first reduce both to their weak head normal forms via \verb+whd*+ and the compare the two heads. If they match, the comparison is called recursively on the subterms.
+The former is trivial because we reuse the $\beta$-reduction of $\lambda$Prolog for capture avoiding substitution. The two former predicates are then defined by levels: to compare two terms, we reduce both to their weak head normal forms via \verb+whd*+ and then compare the two heads. If they match, the comparison is called recursively on the subterms.
 
 \begin{Verbatim}
 type whd1,whd* term -> term -> prop.
