@@ -1016,13 +1016,14 @@ Several tests already pass, but we are currently still developing the full set o
 
 \section{Conclusions and related works}\label{sec:conclusion}
 
-In this paper we validated $\lambda$Prolog as a good language to implement
+In this paper we validate $\lambda$Prolog as a good language to implement
 the type checker (kernel) of a fully fledged type theory like the Calculus of
 Inductive Constructions.  In order to implement an elaborator, i.e. a type
-checker for partial terms, we extended the $\lambda$Prolog with constructs to
+checker for partial terms, we extend the $\lambda$Prolog with constructs to
 turn goals into constraints and we add a CHR like language to manipulate
-the set of constraints.  We implemented the proposed extensions in the ELPI
-system and used them to extend, in a fully modular way, the kernel into an elaborator.
+the set of constraints.  We implement the proposed extensions in the ELPI
+system and use them to extend, in a fully modular way, the kernel into
+an elaborator.
 
 To our knowledge ELPI is the first $\lambda$Prolog implementation extended
 with first class constraints.  The situation is very different for Prolog, where all
@@ -1071,7 +1072,7 @@ of Matita with the one presented in this paper, to precisely size the
 trade-off between the programming abstractions offered by the
 HOCLP language we have implemented and their runtime cost.
 
-As another future work we hope in Abella to fully prove correct, although not complete, the
+As another future work, we hope in Abella to fully prove correct, although not complete, the
 elaborator component, so to call into question the standard design of
 interactive provers: what is the point of having a kernel component if the
 elaborator is proved to only generate terms accepted by it?
