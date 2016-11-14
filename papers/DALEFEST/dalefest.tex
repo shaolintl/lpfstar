@@ -862,7 +862,7 @@ To implement the elaborator, we need to consider all the predicates defined by i
 
 \paragraph{Type-checking: the \texttt{of} predicate.}
 Using a mode declaration plus \verb+$delay+, we delay type-checking a
-metavariable, turning it into a proof obligation, i.e. a sequent of the form $\Gamma \vdash \mathtt{of}~X~t$\textcolor{red}{CSC: io ho usato $\vdash$ qui e là ma forse è meglio usare sempre \verb+?-+} where $\Gamma$ holds type declarations for variables (\verb+of x t+) or value assignments (\verb+val x t v nf+).
+metavariable, turning it into a proof obligation, i.e. a sequent of the form $\Gamma \vdash \mathtt{of}~X~t$\textcolor{red}{CSC: io ho usato $\vdash$ qui e là ma forse è meglio usare sempre \texttt{?-}} where $\Gamma$ holds type declarations for variables (\verb+of x t+) or value assignments (\verb+val x t v nf+).
 
 \begin{Verbatim}
 mode (of i o).
