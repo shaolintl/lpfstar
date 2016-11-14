@@ -408,10 +408,12 @@ If we run the following query, the computation diverges:
 ?- of (lam T a\ P a) (arr (sort I) a\ arr a _\ a)
 \end{Verbatim}
 
+\textcolor{red}{Il salto fra la frase prima e addirittura l'inizio di una sottosezione è atroce. Magari iniziare la sottosezione prima di ``Consider''?}
+
 \subsection{Generative semantics and constraint declaration} %%%%%%%%%%%
 \label{sec:delay}
 
-The rule for lambda abstraction applies fine, but generates the problematic
+The rule for $\lambda$-abstraction applies fine, but generates the problematic
 goal \verb+of P (arr x _\ x)+ for some fresh \verb+x+.  Then, the type checking
 rule for application, which head is \verb+of (app M N) BN+, applies
 indefinitely.  
@@ -423,7 +425,7 @@ search does not diverge, the behaviour obtained is not the one
 expected from an elaborator for an \emph{interactive} prover: the
 elaborator is not meant to fill in the term, unless the choice is
 obliged. On the contrary, it should leave the meta variable not
-instantiated and should \emph{remember} the need for verifying if the
+instantiated and should \emph{remember} (in some kind of metasenv) the need for verifying if the
 predicate holds later on, when the metavariable gets instantiated. In
 the example above, type-checking \verb+(lam T a\ P a)+ forces the
 system to remember that term of type \verb+(arr x _\ x)+ has to be
@@ -431,7 +433,7 @@ provided (in a context where \verb+of x (sort I)+ holds), that in turn
 corresponds to the proof obligation $A : \mbox{sort I} \vdash A \to A $.
 
 As we mentioned earlier the sometimes undesired generative semantics
-comes from Prolog, i.e. it is not specific to $\lambda$Prolog.
+is inherited from Prolog.
 Nevertheless, all modern Prolog engines provide a \verb+var/1+
 built-in to test/guard predicates against flexible input, provide
 one/many variants of \verb+delay/2+ to suspend a goal until the input
@@ -444,21 +446,24 @@ instantiated.  Delayed goals can be thought as \emph{constraints} over the
 metavariables occurring in them. In the example above, the programmer is
 imposing a constraint between \verb+X+ and \verb+Y+.
 
-These mechanisms, however, have never been standardized, and
-$\lambda$Prolog does not provide any of these facilities, or at least,
-does not expose them to the programmer.  Curiously the Teyjus system
-delays unification problems outside L$_\lambda$, but does not expose
-any primitive to delay other goals.
+These mechanisms, however, have never been standardized. Some of them
+break the clean declarative semantics of $\lambda$Prolog, others
+respect it. $\lambda$Prolog does not provide any of these facilities,
+or at least, does not expose them to the programmer. For example, the Teyjus
+system delays unification problems outside L$_\lambda$ and implements a complex
+machinery to wake up delaied goals that re-enter the fragment, but does not
+expose any primitive to delay other kind of goals.
 
 At the light of all these considerations we extend the ELPI
-$\lambda$Prolog interpreter with the following directive:
+$\lambda$Prolog interpreter with a \verb+delay+ directive that we can use
+as follows:
 
 \begin{Verbatim}
 delay (of X T) on X.
 \end{Verbatim}
 
 The interpreter now delays goals of the form \verb+of X T+ whenever \verb+X+
-is flexible.  As a result, instead of diverging, the running example
+is flexible. Instead of diverging, the running example now
 terminates leaving the following (suspended) goal unsolved:
 
 \begin{Verbatim}
@@ -472,7 +477,7 @@ and \verb+(t x)+ is checked to be of type \verb+(arr x _\ x)+.
 In turn such check can either:
 \begin{description}
 \item[terminate] successfully if \verb+t+ has the right type and is ground,
-	i.e. \verb+t = x\lam x w\ w+.  If such assignment for \verb+P+
+	e.g. \verb+t = x\lam x w\ w+.  If such assignment for \verb+P+
 	comes from a proof command, then it corresponds to a proof
 	step that closes the goal.
 \item[fail] rejecting the proposed assignment for \verb+P+, e.g. 
@@ -484,13 +489,13 @@ In turn such check can either:
 	generates one or more new goals.
 \end{description}
 The three behaviors above perfectly match the desired behavior of an
-elaborator.  In addition to that, the set of delayed goals
+elaborator.  In addition to that, the set of delayed goals implicitely kept
+by the language interpreter
 represents faithfully the metasenv data structure, relieving the
-programmer the thread it around (and undo any changes to it in case of
-backtracking).  More that that, the automatic resumption of typing
+programmer to manage it himself, threading it through all typing rules and
+managing explicitly backtracking and goal resumption.  More that that, the automatic resumption of typing
 constraints makes it impossible to obtain an ill-typed term by
-instantiation.  Last, it lets one selectively disable the undesired
-generative semantics of predicates like \verb+of+.
+instantiation: the code is correct by construction.  Last, it lets one selectively disable the undesired generative semantics of predicates like \verb+of,lt,+\ldots.
 
 \subsection{Meta theory and constraint propagation} %%%%%%%%%%%%%%%%%%%%%%%%%%
 
