@@ -22,11 +22,16 @@
 \begin{abstract}
 In this paper we are interested in high level programming languages to implement the core components of an interactive theorem prover for a dependently typed language: the kernel --- responsible for type-checking closed terms --- and the elaborator --- that manipulates terms with holes or, equivalently, partial proof terms.
 
-In the first part we confirm that $\lambda$Prolog, the language developed by Nadathur and Miller since the 80s, is extremely suitable for implementing the kernel, even when efficient techniques like reduction machines are employed.
+In the first part of the paper we confirm that $\lambda$Prolog, the language developed by Miller and Nadathur since the 80s, is extremely suitable for implementing the kernel, even when efficient techniques like reduction machines are employed.
 
-In the second part we turn our attention to the elaborator and we observe that the eager generative semantics inherited by Prolog makes it impossible to reason by induction over terms containing metavariables. We also conclude that the minimal extension to $\lambda$Prolog that allows to do so is the possibility to delay inductive predicates over flexible terms, turning them into (set of) constraints to be propagated according to user provided constraint propagation rules.
+In the second part of the paper we turn our attention to the elaborator and we observe that the eager generative semantics inherited by Prolog makes it impossible to reason by induction over terms containing metavariables. We also conclude that the minimal extension to $\lambda$Prolog that allows to do so is the possibility to delay inductive predicates over flexible terms, turning them into (set of) constraints to be propagated according to user provided constraint propagation rules.
 
-Therefore we propose our syntax and implementation of the first Higher Order Constraint Logic Programming (HOCLP) language and we apply it to our first major test case: the implementation of an elaborator for a dependently typed theory as a CLP extension to a kernel written in plain $\lambda$Prolog.
+Therefore we propose extensions to $\lambda$Prolog to declare and manipulate
+higher order constraints, and we implement the proposed extensions in the ELPI
+system.  Our test case is the implementation of an elaborator for a type theory
+as a CLP extension to a kernel written in plain $\lambda$Prolog.
+
+%Therefore we propose our syntax and implementation of the first Higher Order Constraint Logic Programming (HOCLP) language and we apply it to our first major test case: the implementation of an elaborator for a dependently typed theory as a CLP extension to a kernel written in plain $\lambda$Prolog.
 
 
 %Higher Order Logic Programming and its main incarnation, which is $\lambda$Prolog, were introduced by Nadathur and Miller in the 80s. Like logical frameworks, it allows to write type-checkers extremely naturally, just encoding the derivation rules in an almost Verbatim way. In particular, thanks to a shallow encoding of binders, the implementor is relieved from dealing with binders, capture avoiding substitution, alpha-conversion and the like. By delegating them to the language, it can focus on the logic of the program he is implementing and he can hope in future optimizations of the compiler to improve the efficiency of code. Thanks to the Curry-Howard isomorphism, proof-checkers --- e.g. for dependently typed languages --- can also be encoded in the same way.
@@ -55,8 +60,8 @@ $\lambda$-abstractions in the term syntax; then types are added to
 drive full higher-order unification; then universal quantification in
 goals and $\eta$-equivalence are required to express relations between
 $\lambda$-abstractions and their bodies; and finally implication in
-goals is needed to allow for structural induction definitions of
-predicates.
+goals is needed \textcolor{red}{to allow for structural induction definitions of
+predicates}.
 
 By means of $\lambda$-abstractions in terms, $\lambda$Prolog can
 easily encode all kind of binders without the need to take care of
@@ -89,7 +94,7 @@ escalating the encoded $\lambda$-calculus to more complex terms and
 types, it is possible to obtain a proof-checker for a richer
 logic, like the Calculus of Inductive Constructions (CIC) that, up to some
 variations, is the common logic shared by the interactive theorem
-provers (ITPs) Coq, Lean, Matita and Agda.
+provers (ITPs) Coq, Matita and Lean. %, Matita and Agda.
 
 All the ITPs mentioned above are implemented following
 basically the same architecture. At the core of the system there is
@@ -102,19 +107,21 @@ The last three judgements are necessary because the type system has
 dependent types and therefore types need to be compared up to
 computation.
 
-Realistic implementations of kernels employ complex techniques to improve the performance, like reduction machines to speed up reduction and heuristics to completely avoid reduction during conversion when possible. Is $\lambda$Prolog suitable to implement such techniques? The question is not totally trivial because, for example, reduction machines typically rely on the representation of terms via De Brujin indexes.
+Realistic implementations of kernels employ complex techniques to improve the performance, like reduction machines to speed up reduction and heuristics to completely avoid reduction during conversion when possible. Is $\lambda$Prolog suitable to implement such techniques? The question is not totally trivial because, for example, reduction machines typically rely on the representation of terms via De Bruijn indexes.
 
 We already gave a positive answer in~\cite{elpiLPAR} where we describe
-ELPI, a fast $lambda$Prolog interpreter, and implement in
-a type-checker for Landau's Grundlagen \textcolor{red}{XXXXXXXX}.
+ELPI, a fast $\lambda$Prolog interpreter, and implement 
+a type-checker for a dependently type lambda calculus.
+ELPI is able to run such type checker on the Automath's proof terms of
+Landau's Grundlagen reasonably fast.
 In Section~\ref{sec:kernel} we confirm the answer again by implementing a
-kernel for a generic PTS that supports cumulativity between sorts as well. We
-then instantiate the PTS to the one of Matita and we modularly add to the
-kernel support for globally defined constants and primitive inductive
-types, following the variant of the Calculus of Inductive Constructions of
-Matita. Finally, we embed ELPI in Matita and divert all calls to the kernel
-written in $\lambda$Prolog in order to test it on the arithmetic library of
-the system.
+kernel for a generic Pure Type System (PTS) that supports cumulativity between
+sorts as well. We then instantiate the PTS to the one of Matita and we
+modularly add to the kernel support for globally defined constants and
+primitive inductive types, following the variant of the Calculus of Inductive
+Constructions of Matita. Finally, we embed ELPI in Matita and divert all calls
+to the kernel written in $\lambda$Prolog in order to test it on the arithmetic
+library of the system.
 
 \paragraph{From proof-checking to interactive proving.}
 
@@ -126,7 +133,7 @@ the system lies is instead the second layer, called \emph{elaborator}
 or \emph{refiner}~\cite{leanelaborator,bidir}.
 In Section~\ref{sec:elaborator} we recall what an elaborator does and we explain why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators
 
-In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added? We conclude that $\lambda$Prolog is not suitable and, combining and extending existing ideas in the litterature, we introduce the first Constraint Programming extension of $\lambda$Prolog. We also implemented an interpreter for the extended language that is called ELPI (Embedded Lambda Prolog Interpreter).
+In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added? We conclude that $\lambda$Prolog is not suitable and, combining and extending existing ideas in the literature, we introduce the first Constraint Programming extension of $\lambda$Prolog. We also implemented the language extensions in the ELPI system.
 
 In Section~\ref{sec:cicelaborator} we work towards an implementation of an elaborator for CIC written in ELPI, obtained extending modularly a kernel presented in Section~\ref{sec:kernel}. The implementation is the first major use case for the language.
 
@@ -134,7 +141,7 @@ The final Section~\ref{sec:conclusion} contains comparisons with related work an
 
 \section{A modular kernel for CIC}\label{sec:kernel}
 
-We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. Then we instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{ecc} and the PTS of CIC, and then we modularly extend the type-checker to the whole CIC by adding inductive types as well.
+We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic PTS that also allows cumulativity between universes and dependent products that are covariant in the second argument. Then we instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{ecc} and the PTS of CIC, and then we modularly extend the type-checker to the whole CIC by adding inductive types as well.
 
 \paragraph{Term representation and type-checking rules}
 We start identifying syntactically types and terms, adding a new constructor for sorts of the PTS and refining \verb+arr+ to the dependently typed product.
@@ -148,7 +155,7 @@ type app term -> term -> term.  type lam term -> (term -> term) -> term.
 
 We introduce the typing rules for the new constructors and we refine the
 ones for abstraction and application. In particular, the types inferred and
-expected for the argument of an application are meant to be compared up to $\beta$-reduction and cumulativity of universes. The $\verb+sub+$ predicate, that will be instantiated later, does the check. The \verb+match_sort+ and the \verb+match_arr+ predicates, also to be instantiated later, are used to check if the weak head normal form of the first argument is respectively a sort or a dependent product. In both cases the sub-terms are returned by the predicate. For example, \verb+match_arr (arr nat x \ x) A F+ is meant to instantiate \verb+A+ with \verb+nat+ and \verb+F+ with \verb+x \ x+. Finally, the \verb+succ+ and \verb+max+ predicates are meant to be later instantiated with the corresponding rules of a PTS.
+expected for the argument of an application are meant to be compared up to $\beta$-reduction and cumulativity of universes. The $\verb+sub+$ predicate, that will be instantiated later, implements this check. The \verb+match_sort+ and the \verb+match_arr+ predicates, also to be instantiated later, are used to check if the weak head normal form of the first argument is respectively a sort or a dependent product. In both cases the sub-terms are returned by the predicate. For example, \verb+match_arr (arr nat x \ x) A F+ is meant to instantiate \verb+A+ with \verb+nat+ and \verb+F+ with \verb+x \ x+. Finally, the \verb+succ+ and \verb+max+ predicates are meant to be later instantiated with the corresponding rules of a PTS.
 
 \begin{Verbatim}
 type of term -> term -> o.
@@ -158,7 +165,8 @@ of (sort I) (sort J) :- succ I J.
 of (app M N) BN :- of M TM, match_arr TM A1 Bx, of N A2, sub A2 A1, BN = Bx N.
 
 of (lam A F) (arr A B) :-
- of A SA, conv SA (sort I), (pi x\ of x A => of (F x) (B x)), of (arr A B) _.
+ of A SA, match_sort SA (sort _),
+ (pi x\ of x A => of (F x) (B x)), of (arr A B) _.
 
 of (arr A Bx) (sort K) :-
  of A TA, (pi x\ of x A => of (Bx x) TB),
@@ -166,7 +174,7 @@ of (arr A Bx) (sort K) :-
 \end{Verbatim}
 
 \textcolor{red}{<BEGIN>}Note that the rules are syntax directed, i.e. with explicit calls to
-\verb+sub+.  The on-paper presentation is more elegant and compact but 
+\verb+sub+.  The more widesprad presentation on-paper presentation is more elegant and compact but 
 uses in a fundamental way non determinism (hence results in too much
 backtracking) by simply adding:
 
