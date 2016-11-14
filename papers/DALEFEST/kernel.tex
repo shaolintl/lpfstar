@@ -15,7 +15,7 @@ The list of variables bound in $\lambda$Prolog environment can be used after the
 \begin{Verbatim}
 type abbr term -> term -> (term -> term) -> term.  % local definition (let-in)
 
-of (abbr TY TE F) U :- of TE TY', sub TY' TY, pi x \ of x TY => of (F x) U.
+of (abbr TY TE F) U :- of TE TY', sub TY' TY, pi x \ of x TY => val x TY TE NF => of (F x) U.
 \end{Verbatim}
 
 The code of the reduction machine is the following:
