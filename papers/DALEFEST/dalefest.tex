@@ -1013,7 +1013,7 @@ SWI Prolog~\cite{SWI} and SICStus Prolog~\cite{SICStus}.  Providing to
 the Prolog language primitives of the meta level, like matching, has also
 been tried before.  For example the Picat language, based on the
 B-Prolog~\cite{Bprolog} engine, lets the user chose, for each clause,
-if the head has to me matched or unified with the goal.
+if the head has to be matched or unified with the goal.
 
 While basing the implementation of the kernel of an interactive prover on a
 logical framework (LF) eventually animated by SLD resolution is not new, 
@@ -1032,22 +1032,21 @@ in LF modulo equational theories.  Unfortunately, at the time of writing,
 the system lacks an elaborator.
 
 Describing the elaborator in terms of constraints was a choice first 
-made in Agda version 2~\cite{Agda} and more recently in Lean~\cite{Lean}.
+made in Agda version~2~\cite{Agda} and more recently in Lean~\cite{Lean}.
 Both system implement they own, ad-hoc, constraint solver, the former system in
 Haskell, while the latter in C++.  The approach we follow in the paper
 is to provide a programming platform where constraint and their propagation
 rules are first class, to ease documentation, experimentation and extension
 of the implemented system.
 
-For an early prototype of the elaborator presented in this paper,
-the typing constraint propagation rule implementing uniqueness of
-typing was proved correct in Abella~\cite{Abella}.  
-The intricacy of the proof was mainly due to the combination of
-contexts of dependently typed entries and the combination of two
-typing constraints.  The main weak point of the system was the lack of
-small step semantics for $\lambda$Prolog programs, forcing us to XXX.\\
-As a future work we hope to fully prove correct, although not complete, the
-elaborator component, so to call into question the standard design if
+A big advantage of writing the code in $\lambda$Prolog is the possibility of
+using the Abella~\cite{Abella} theorem prover to prove its correctness.
+In particular, Abella can be used to prove the soundness of all constraint propagation rules. For example, for an early prototype of the elaborator presented
+in this paper, the typing constraint propagation rule implementing uniqueness of
+typing was proved correct in Abella~\cite{Abella}. However, the current version of Abella reasons on the big step operational semantics of $\lambda$Prolog programs without cuts. Because delaying a goal means interrupting execution in the middle, the small step version of the operational semantics would be the appropriate tool to use instead. For example, in the aforementioned proof of unicity of typing, we had to assume a certain invariant on the $\lambda$Prolog context that is the context of the delayed typing sequent. In order to know that the invariant really holds during computation, we need to prove that, if it holds initially, it holds after any number of small execution steps. Currently, this statement cannot even be stated in Abella. In the future, we would like to re-design Abella around a small step operational semantics to overcome this limitation and also to be able to reason over cuts.
+
+As a future work we hope in Abella to fully prove correct, although not complete, the
+elaborator component, so to call into question the standard design of
 interactive provers: what is the point of having a kernel component if the
 elaborator is proved to only generate terms accepted by it?
 
