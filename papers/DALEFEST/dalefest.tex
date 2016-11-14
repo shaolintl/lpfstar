@@ -11,7 +11,7 @@
 \author{Ferruccio Guidi \and Claudio Sacerdoti Coen \and Enrico Tassi}
 \institute{
   Department of Computer Science and Engineering, University of Bologna \email{ferruccio.guidi@unibo.it} \and
-  Department of Computer Scienc and Engineeringe, University of Bologna \email{claudio.sacerdoticoen@unibo.it} \and
+  Department of Computer Science and Engineering, University of Bologna \email{claudio.sacerdoticoen@unibo.it} \and
   Inria Sophia-Antipolis, \email{Enrico.Tassi@inria.fr}}
 
 \authorrunning{F. Guidi, C. Sacerdoti Coen, E. Tassi}
@@ -35,9 +35,9 @@ as a CLP extension to a kernel written in plain $\lambda$Prolog.
 %Therefore we propose our syntax and implementation of the first Higher Order Constraint Logic Programming (HOCLP) language and we apply it to our first major test case: the implementation of an elaborator for a dependently typed theory as a CLP extension to a kernel written in plain $\lambda$Prolog.
 
 
-%Higher Order Logic Programming and its main incarnation, which is $\lambda$Prolog, were introduced by Nadathur and Miller in the 80s. Like logical frameworks, it allows to write type-checkers extremely naturally, just encoding the derivation rules in an almost Verbatim way. In particular, thanks to a shallow encoding of binders, the implementor is relieved from dealing with binders, capture avoiding substitution, alpha-conversion and the like. By delegating them to the language, it can focus on the logic of the program he is implementing and he can hope in future optimizations of the compiler to improve the efficiency of code. Thanks to the Curry-Howard isomorphism, proof-checkers --- e.g. for dependently typed languages --- can also be encoded in the same way.
+%Higher Order Logic Programming and its main incarnation, which is $\lambda$Prolog, were introduced by Nadathur and Miller in the 80s. Like logical frameworks, it allows to write type-checkers extremely naturally, just encoding the derivation rules in an almost Verbatim way. In particular, thanks to a shallow encoding of binders, the implementor is relieved from dealing with binders, capture avoiding substitution, alpha-conversion and the like. By delegating them to the language, it can focus on the logic of the program he is implementing and he can hope in future optimisations of the compiler to improve the efficiency of code. Thanks to the Curry-Howard isomorphism, proof-checkers --- e.g. for dependently typed languages --- can also be encoded in the same way.
 
-%To implement an interactive theorem prover following the Curry-Howard correspondence, the programmer basically has to generalize the type-checker by allowing incomplete terms whose holes are represented by existentially quantified metavariables. Adopting a deep encoding, the user is forced to implement non-capture-avoiding instantiation, explicit substitutions and higher order unification under a mixed prefix. Therefore, we would prefer a shallow encoding of metavariables, where the existentially quantified metavariables of the logic programming language directly represent metavariables of the encoded typed calculus, and the previously mentioned operations can be largely inherited from the metalevel.
+%To implement an interactive theorem prover following the Curry-Howard correspondence, the programmer basically has to generalise the type-checker by allowing incomplete terms whose holes are represented by existentially quantified metavariables. Adopting a deep encoding, the user is forced to implement non-capture-avoiding instantiation, explicit substitutions and higher order unification under a mixed prefix. Therefore, we would prefer a shallow encoding of metavariables, where the existentially quantified metavariables of the logic programming language directly represent metavariables of the encoded typed calculus, and the previously mentioned operations can be largely inherited from the meta-level.
 
 %Such deep encodings do not work for $\lambda$Prolog and, more generally, for all higher order logic programming languages and logical frameworks. Indeed, the standard operational semantics of $\lambda$Prolog is generative, i.e. when a predicate like well-typedness inspects a flexible term, all possible instantiations of the latter are tried blindly. On the contrary, in an interactive theorem prover a predicate over a flexible term is supposed to be delayed and turned into a constraint to be solved later. When constraints accumulate, they can be simplified and propagated exactly in the spirit of constraint programming.
 
@@ -53,7 +53,7 @@ In~\cite{jlp98} Belleannée et. al. propose a pragmatic reconstruction
 of $\lambda$Prolog~\cite{lambdap1,lambdap2,lambdap3}, the Higher Order
 Logic Programming (HOLP) language introduced by Dale Miller and
 Gopalan Nadathur in the '80s.
-Their conclusion is that $\lambda$Prolog can be characterized as the
+Their conclusion is that $\lambda$Prolog can be characterised as the
 minimal extension of Prolog that allows to program by structural
 induction on $\lambda$-terms. According to their reconstruction, in
 order to achieve that goal, Prolog needs to be first augmented with
@@ -175,7 +175,7 @@ of (arr A Bx) (sort K) :-
 % \textcolor{red}{<BEGIN>}
 The rules above have the merit of being syntax-directed, never requiring backtracking and always inferring the most general type, in the sense of Luo~\cite{ecc}.
 % , i.e. with explicit calls to
-% \verb+sub+.  The more widesprad presentation on-paper presentation is more elegant and compact but 
+% \verb+sub+.  The more widespread presentation on-paper presentation is more elegant and compact but 
 % uses in a fundamental way non determinism (hence results in too much
 % backtracking) by simply adding:
 % 
@@ -242,7 +242,7 @@ To obtain the kernel, the programmer just needs to accumulate together the $\lam
 
 For example, the following lines define the predicative hierarchy of Luo's ECC,
 using the integer $i$ to represent the universe Type$_i$. The \verb+macro+
-directive is recognized by the ELPI interpreter that transparently replaces all
+directive is recognised by the ELPI interpreter that transparently replaces all
 occurrences of \verb+@univ+ by \verb+int+.
 \begin{Verbatim}
 macro @univ :- int.
@@ -265,7 +265,7 @@ terminology, with \emph{existentially quantified metavariables}. For
 example, the partial term $\lambda x: T. f~(X~x)~Y$ where $T,X,Y$ are
 quantified outside the term represents the $\lambda$-abstraction over
 $x$ of a type yet to be determined of the application of $f$ to two
-arguments, both to be yet determined and such that $x$ can happear
+arguments, both to be yet determined and such that $x$ can appear
 free only in the first. Elaborating the term versus the expected type
 $\mathbb{N} \to \mathbb{B}$ will instantiate $T$ with $\mathbb{N}$ and
 verify that $f$ is a binary function returning a boolean.
@@ -293,7 +293,7 @@ can be.
 The elaborators of the majority of the provers mentioned above are all
 implemented according to the same schema: the syntax of terms is augmented with
 explicitly substituted existential variables
-and the judgements of the kernel are re-implemented from scratch, generalizing
+and the judgements of the kernel are re-implemented from scratch, generalising
 them to take into account metavariables and elaboration.
 
 In particular the elaborator code works on two new data types: one for partial terms and one, called \emph{metasenv}, that assigns to metavariables a typing judgement (a sequent) and, eventually, an assignment. E.g. a metasenv containing \verb+x:nat, y:bool +$\vdash$\verb+ X x y : nat+ declares \verb+X+ to be an hole to be instantiated only with terms of type \verb+nat+ in the context \verb+x:nat, y:bool+.
@@ -303,7 +303,7 @@ terms. For example, conversion (the \verb+sub+ predicates in the running
 example) becomes narrowing, i.e. higher order unification under a
 mixed prefix~\cite{mixedprefix} in presence of rewriting rules (and cumulativity of universes as subtyping).
 Unification requires metavariable instantiation, that is
-implemented lazily for efficiency.  Type checking \verb+of+ is generalized to
+implemented lazily for efficiency.  Type checking \verb+of+ is generalised to
 elaboration, for example by replacing all calls to conversion with calls to
 narrowing and by threading around the metasenv.
 
@@ -364,7 +364,7 @@ the implementation of elaborators. In particular:
 	high-level code.
 	Finally the \textbf{intricacy of elaboration} is mitigated.
 \item The programming language features a primitive and powerful
-	notion of extensibility: programs are organized into clauses,
+	notion of extensibility: programs are organised into clauses,
 	and new clauses can be freely added.
 	In this way the rules of the kernel need not to be re-implemented in the
 	elaborator. On the contrary, they are extended to cover partial terms,
@@ -452,7 +452,7 @@ instantiated.  Delayed goals can be thought as \emph{constraints} over the
 metavariables occurring in them. In the example above, the programmer is
 imposing a constraint between \verb+X+ and \verb+Y+.
 
-These mechanisms, however, have never been standardized. Some of them
+These mechanisms, however, have never been standardised. Some of them
 break the clean declarative semantics of $\lambda$Prolog, others
 respect it. $\lambda$Prolog does not provide any of these facilities,
 or at least, does not expose them to the programmer. For example, the Teyjus
@@ -539,7 +539,7 @@ propagation rules in user space: only constraints belonging to well-known catego
 originate from the meta-theory of the object language we are implementing,
 hence the programmer must be able to declare new kind of constraints and
 specify how constraints are to rewritten according to meta-theorems about the
-object language (e.g. unicity of typing).
+object language (e.g. uniqueness of typing).
 
 Languages to describe sets of rules to manipulate a set of
 constraints have been studied in the literature, and the most well-known one is certainly CHR (Constraint Handling Rules~\cite{chr}).
@@ -565,7 +565,7 @@ enables the following applications:
         of $\lambda$Prolog. In particular, constraint propagation is just a
         controlled form of forward reasoning, while SLD resolution only
 	does backward reasoning.
-\item[code optimizations given by the meta-theory] of the object
+\item[code optimisations given by the meta-theory] of the object
 	language.  In the running example, uniqueness of typing is key to keep
 	the implicit metasenv linear in the number of missing sub-proofs.
         In turn, this greatly reduces the number of checks to be performed when
@@ -623,7 +623,7 @@ freezing takes place, the meta-interpreter is started and the guard is run.
 
 When the meta-interpreter halts successfully on the guard, the new goal is
 defrost and it is immediately scheduled for execution in the interpreter.
-Defrosting restores the metavariables originally present in the constraints, and it also creates a new metavariable (in the interpreter) for each new metavariable (in the meta-intepreter) that was generated by executing the guard.
+Defrosting restores the metavariables originally present in the constraints, and it also creates a new metavariable (in the interpreter) for each new metavariable (in the meta-interpreter) that was generated by executing the guard.
 
 For example, if we take the two typing constraints on \verb+P+ above
 and we freeze them, we obtain:
@@ -670,7 +670,7 @@ $
  \nabla x_1\ldots x_n, \mathcal{H} = \nabla y_1\ldots y_m, \mathcal{G}
 $.
 
-In the general case it is closely related to equivariate unification
+In the general case it is closely related to equivariant unification
 that is known to be a NP hard~\cite{Cheney2004} problem.  While being
 an elegant high-level language, CHR is not efficient.  It is estimated
 be on average 100 times slower than conventional programming
@@ -751,8 +751,8 @@ that the intersection of two groups is a group: in order to find a group \verb+X
 Remark how little we use of CHR in this rule: only one head, no alignment,
 no guard (i.e. no need to freeze).
 Still, these simple rules faithfully model the extension to the elaborator
-of Coq that proved to be key to outstanding formalizations like
-the Odd Order Theorem~\cite{oothm}.  Such formalization declares a 26
+of Coq that proved to be key to outstanding formalisations like
+the Odd Order Theorem~\cite{oothm}.  Such formalisation declares a 26
 hundreds of rules like these ones.  It goes without saying that
 the efficiency of such rules is critical.
 
@@ -866,7 +866,7 @@ run, no compilation chain).
 \section{Towards an elaborator for CIC}\label{sec:cicelaborator}
 We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing type casts. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules as they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of type casts.
 
-In place of following the algorithm of Matita and Coq, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be solved later. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
+In place of following the algorithm of Matita and Coq, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be solved later. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimise the ELPI interpreter.
 
 To implement the elaborator, we need to consider all the predicates defined by induction over the shape of terms, and either turn them into constraints to be propagated, or immediately suggest solutions.
 
