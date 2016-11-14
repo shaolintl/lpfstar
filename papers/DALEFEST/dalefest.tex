@@ -281,22 +281,18 @@ explicitly substituted existential variables
 and the judgements of the kernel are re-implemented from scratch, generalizing
 them to take in account metavariables and elaboration.
 
-In particular one no more works with terms, but always with partial terms and
-a metasenv: a data structure assigning to metavariable a typing judgement
-and, eventually, an assignment.
+In particular the elaborator code works on two new data types: one for partial terms and one, called \emph{metasenv}, that assigns to metavariables a typing judgement (a sequent) and, eventually, an assignment. E.g. a metasenv containing \verb+x:nat, y:bool +$\vdash$\verb+ X x y : nat+ declares \verb+X+ to be an hole to be instantiated only with terms of type \verb+nat+ in the context \verb+x:nat, y:bool+.
 
-All algorithms manipulating terms are extended to open
-terms, in particular conversion (implemented by the 
-\verb+sub+  and \verb+conv+ predicates in the running example)
-becomes narrowing, i.e. higher order unification under a
-mixed prefix~\cite{mixedprefix} in presence of rewriting rules.
+All algorithms manipulating terms are extended to partial
+terms. For example, conversion (the \verb+sub+ predicates in the running
+example) becomes narrowing, i.e. higher order unification under a
+mixed prefix~\cite{mixedprefix} in presence of rewriting rules (and cumulativity of universes as subtyping).
 Unification requires metavariable instantiation, that is
 implemented lazily for efficiency.  Type checking \verb+of+ is generalized to
 elaboration, for example by replacing all calls to conversion with calls to
 narrowing and by threading around the metasenv.
 
-The approach is sub-optimal in many ways.  We here identify the main problems
-in the state of the art.
+The state-of-the-art approach is sub-optimal in many ways:
 
 \begin{description}
 \item[programming platform]
@@ -309,7 +305,7 @@ instantiation).
 Such code is far from being trivial, since it tackles problems that, like
 higher order unification, are only semi-decidable. For efficiency reasons a lot
 of incomplete heuristics are implemented to speed up the system and reduce
-backtracking. The heuristics, however, are quite ad-hoc and they interact with
+backtracking. The heuristics are quite ad-hoc and they interact with
 one another in unpredictable ways. Because they are hidden in the code, the
 whole system becomes unpredictable to the user.
 \item[code duplication]
@@ -324,6 +320,7 @@ the conjecture the proof commands make progress by instantiating such
 meta with partial terms.  Once there are no unresolved meta variables left,
 the ground term is checked, again and in its totality, by the kernel.
 Bugs in the elaborator are detected by the kernel, letting the user 
+\textcolor{red}{??? SENTENZA INCOMPLETA}
 \item[extensibility of the elaborator]
 Finally, the elaborator is the brain of the system, but it is oblivious of the
 pragmatic ways to use the knowledge in the prover library, e.g.  to
