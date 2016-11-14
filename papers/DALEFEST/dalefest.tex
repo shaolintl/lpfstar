@@ -1021,11 +1021,11 @@ the type checker (kernel) of a fully fledged type theory like the Calculus of
 Inductive Constructions.  In order to implement an elaborator, i.e. a type
 checker for partial terms, we extended the $\lambda$Prolog with constructs to
 turn goals into constraints and we add a CHR like language to manipulate
-the set of constraints.  We implement the proposed extensions in the ELPI
-system and use them to extend, in a modular way, the kernel into an elaborator.
+the set of constraints.  We implemented the proposed extensions in the ELPI
+system and used them to extend, in a fully modular way, the kernel into an elaborator.
 
 To our knowledge ELPI is the first $\lambda$Prolog implementation extended
-with first class constraints.  The situation is dual for Prolog, where all
+with first class constraints.  The situation is very different for Prolog, where all
 mainstream implementations integrate some constraint solvers.  Moreover,
 the CHR language is typically compiled to Prolog, hence Prolog systems
 can quite easily provide a CHR package.  It is for example the case for
