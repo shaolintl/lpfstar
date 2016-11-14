@@ -888,7 +888,6 @@ The restriction may seems severe, but, once a canonical typing constraint enters
 The propagation works as follow: let \verb+G1 ?- of (X x1 .. xn) u1+ be the canonical sequent and \verb+G2 ?- of (X t1 .. tn) u2+ be the one to be simplified. First we compute the type of \verb+x1+ in \verb+G1+ and of \verb+t1+ in \verb+G2+, imposing as a new constraint their convertibility in the union of \verb+G1+ and \verb+G2+. Then we proceed recursively over \verb+x2 .. xn+ and \verb+t2 .. tn+ after assigning \verb+t1+ to \verb+x1+ via \verb+val+ in \verb+G1+. When the two lists become empty, we generate a final constraint to check if \verb+u1+ is convertible with \verb+u2+.
 
 To detect canonicity, we use the ad-hoc extension predicate \verb+name+ of ELPI that holds iff the argument is a universal variable. Recall tat the syntax \verb+G => L+ when \verb+G+ is a list of propositions is equivalent in ELPI to assuming the conjunction of the predicates in \verb+G+.
-\marginpar{see fix to is canonical}
 
 \begin{Verbatim}
 constraint of val {

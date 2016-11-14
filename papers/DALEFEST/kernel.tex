@@ -1,4 +1,4 @@
-The implementation of weak head reduction given before is well-known to be very inefficient, because the body of the abstraction of a $\beta$-redex is immediately and completely traversed when the redex is fired.\marginpar{Non in teyjus, solo la seconda parte, duplicazione, è rilevante! La terza è legata alla seconda a mio avviso} Moreover, the argument is duplicated once for each occurrence of the bound variable in the body. Finally, the strategy implemented by \verb+whd*+ is call-by-name, that is inefficient per se.
+The implementation of weak head reduction given before is well-known to be very inefficient, because the body of the abstraction of a $\beta$-redex is immediately and completely traversed when the redex is fired, unless the reduction of $\lambda$Prolog is implemented via explicit substitutions like in Teyjus. Moreover, the strategy implemented by \verb+whd*+ is call-by-name, that is inefficient per se.
 
 To speed up reduction, we now provide a different implementation based on the reduction machine for call-by-need called Wadsworth Abstract Machine~\cite{beniamino}. The machine is a modified Krivine Abstract Machine (KAM~\cite{kam}) that records in the machine environment both terms and their normal forms, the latter being computed lazily by a new invocation of the reduction machine that is fired only when the normal form is required for the first time, i.e. when the variable bound to that value occurs in head position during reduction.
 
@@ -72,7 +72,6 @@ at every step tries $\alpha$-conversion (i.e. $\lambda$Prolog equality) and
 congruence rules to avoid unnecessary reductions.
 
 In order to perform weak head reductions lazily, we obtain \verb+conv+ and \verb+sub+ as two instances of a \verb+comp+ comparison predicate that works on two reduction machine statuses. The third argument is \verb+eq+ if the intended comparison is \verb+conv+ while \verb+leq+ for \verb+sub+.
-\marginpar{forall2 = map}
 \begin{Verbatim}
 type conv term -> term -> prop.
 type sub term -> term -> prop.
@@ -100,5 +99,4 @@ We implemented all the extensions mentioned in a modular way. To activate one ex
 We omit the implementation of the extensions in the paper. All together, they provide a kernel that is functionally equivalent to the one of Matita. The reduction strategies implemented differ though, the one of Matita being more complex than call-by-need. We plan in the future to synchronize the two strategies in order to compare the performance of the two kernels.
 
 To test the kernel, we branched it to Matita, feeding it with every term that is type-checked by Matita when checking the arithmetic library of the system.
-According to our measurements the kernel of Matita is 17 times faster than the
-kernel presented in this paper. \marginpar{lines of code? positivity/termination checks?}
+According to our measurements the kernel presented in the paper is 17 times slower than the interpreted version of Matita (to be fair versus ELPI that is an interpreter). The trade off is that the code is more elegant, much simpler and shorter (e.g. 91 lines saved just from the lifting of De Brujin indexes).
