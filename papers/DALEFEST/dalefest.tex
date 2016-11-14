@@ -26,7 +26,7 @@ In the first part we confirm that $\lambda$Prolog, the language developed by Nad
 
 In the second part we turn our attention to the elaborator and we observe that the eager generative semantics inherited by Prolog makes it impossible to reason by induction over terms containing metavariables. We also conclude that the minimal extension to $\lambda$Prolog that allows to do so is the possibility to delay inductive predicates over flexible terms, turning them into (set of) constraints to be propagated according to user provided constraint propagation rules.
 
-Therefore we propose our syntax and implementation of the first Higher Order Constraint Logic Programming (HOCLP) language. We also show as a test-case how to implement an elaborator for a dependently typed theory as a CLP extension to a kernel written in plain $\lambda$Prolog.
+Therefore we propose our syntax and implementation of the first Higher Order Constraint Logic Programming (HOCLP) language and we apply it to our first major test case: the implementation of an elaborator for a dependently typed theory as a CLP extension to a kernel written in plain $\lambda$Prolog.
 
 
 %Higher Order Logic Programming and its main incarnation, which is $\lambda$Prolog, were introduced by Nadathur and Miller in the 80s. Like logical frameworks, it allows to write type-checkers extremely naturally, just encoding the derivation rules in an almost Verbatim way. In particular, thanks to a shallow encoding of binders, the implementor is relieved from dealing with binders, capture avoiding substitution, alpha-conversion and the like. By delegating them to the language, it can focus on the logic of the program he is implementing and he can hope in future optimizations of the compiler to improve the efficiency of code. Thanks to the Curry-Howard isomorphism, proof-checkers --- e.g. for dependently typed languages --- can also be encoded in the same way.
@@ -65,7 +65,7 @@ instantiation. Structural induction over syntax with binders is also
 made trivial by combining universal quantification and implication
 following the very same pattern used in Logical Frameworks like LF
 (also called $\lambda$P). Indeed, LF, endowed with an HOLP semantics
-like in ???(ELF? Beluga? MMT?) is just a sub-language of
+like \textcolor{red}{in ???(ELF? Beluga? MMT?)} is just a sub-language of
 $\lambda$Prolog.
 
 The ``hello world'' example of $\lambda$Prolog is therefore the
@@ -86,12 +86,12 @@ of (lam A F) (arr A B) :- pi x\ of x A => of (F x) B.
 According to the Curry-Howard isomorphism, the program above can also
 be interpreted as a proof-checker for minimal propositional logic. By
 escalating the encoded $\lambda$-calculus to more complex terms and
-types, it is possible to obtain a proof-checker for a much richer
-logic, like the Calculus of Inductive Constructions that, up to some
+types, it is possible to obtain a proof-checker for a richer
+logic, like the Calculus of Inductive Constructions (CIC) that, up to some
 variations, is the common logic shared by the interactive theorem
 provers (ITPs) Coq, Lean, Matita and Agda.
 
-Indeed, all the ITPs mentioned above are implemented following
+All the ITPs mentioned above are implemented following
 basically the same architecture. At the core of the system there is
 the \emph{kernel}, that is the trusted code base (together with the
 compiler and run-time of the programming language the system is
@@ -102,15 +102,15 @@ The last three judgements are necessary because the type system has
 dependent types and therefore types need to be compared up to
 computation.
 
-However, realistic implementations of kernels employ complex techniques to improve the performance, like reduction machines to speed up reduction and heuristics to completely avoid reduction during conversion when possible. Is $\lambda$Prolog suitable to implement such techniques? The question is not totally trivial because, for example, reduction machines typically rely on the representation of terms via De Brujin indexes.
+Realistic implementations of kernels employ complex techniques to improve the performance, like reduction machines to speed up reduction and heuristics to completely avoid reduction during conversion when possible. Is $\lambda$Prolog suitable to implement such techniques? The question is not totally trivial because, for example, reduction machines typically rely on the representation of terms via De Brujin indexes.
 
 We already gave a positive answer in~\cite{elpiLPAR} where we describe
 ELPI, a fast $lambda$Prolog interpreter, and implement in
-a type-checker for Landau's Grundlagen XXXXXXXX.
+a type-checker for Landau's Grundlagen \textcolor{red}{XXXXXXXX}.
 In Section~\ref{sec:kernel} we confirm the answer again by implementing a
 kernel for a generic PTS that supports cumulativity between sorts as well. We
 then instantiate the PTS to the one of Matita and we modularly add to the
-kernel support for globally defined constants and form primitive inductive
+kernel support for globally defined constants and primitive inductive
 types, following the variant of the Calculus of Inductive Constructions of
 Matita. Finally, we embed ELPI in Matita and divert all calls to the kernel
 written in $\lambda$Prolog in order to test it on the arithmetic library of
@@ -124,17 +124,18 @@ interacts with the kernel and the remaining parts of the system do not
 depend on the behaviour of the kernel. Where the real intelligence of
 the system lies is instead the second layer, called \emph{elaborator}
 or \emph{refiner}~\cite{leanelaborator,bidir}.
+In Section~\ref{sec:elaborator} we recall what an elaborator does and we explain why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators
 
-In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added?
-We will start by detailing what an elaborator is and why the state of the art is not satisfactory, which motivated at the very beginning our interest in using HOLP languages to implement elaborators. We then present the issues we faced when coding an elaborator in $\lambda$Prolog and how similar issues are dealt with in first order Prolog. We then present ELPI, our extension to $\lambda$Prolog.  Finally we present a kernel and a prototype elaborator for CIC written in ELPI.
+In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added? We conclude that $\lambda$Prolog is not suitable and, combining and extending existing ideas in the litterature, we introduce the first Constraint Programming extension of $\lambda$Prolog. We also implemented an interpreter for the extended language that is called ELPI (Embedded Lambda Prolog Interpreter).
 
-The final Section~\ref{sec:conclusions} contains comparisons with related work and future works.
+In Section~\ref{sec:cicelaborator} we work towards an implementation of an elaborator for CIC written in ELPI, obtained extending modularly a kernel presented in Section~\ref{sec:kernel}. The implementation is the first major use case for the language.
+
+The final Section~\ref{sec:conclusion} contains comparisons with related work and future works.
 
 \section{A modular kernel for CIC}\label{sec:kernel}
 
-We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. We will later instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{ecc}, that is a fragment of the Calculus of Inductive Constructions as well.
+We now scale the type-checker for simply typed $\lambda$-calculus of Section~\ref{sec:introduction} to a type-checker for a generic Pure Type System (PTS) that also allows cumulativity between universes and dependent products that are covariant in the second argument. Then we instantiate it to obtain the predicative universal fragment of Luo's ECC~\cite{ecc} and the PTS of CIC, and then we modularly extend the type-checker to the whole CIC by adding inductive types as well.
 
-\subsection{A kernel for PTSs with cumulativity of universes}\label{sec:kernelpts}
 \paragraph{Term representation and type-checking rules}
 We start identifying syntactically types and terms, adding a new constructor for sorts of the PTS and refining \verb+arr+ to the dependently typed product.
 \verb+@univ+ is a macro (in the syntax of the ELPI interpreter~\cite{elpiLPAR}) that will be instantiated in the file that implements the PTS, for example with the type of integers.
@@ -236,7 +237,7 @@ max N M N :- M < N.   succ  I J :- J is I + 1.
 
 \input{kernel}
 
-\section{The elaborator component of today's ITPs}\label{sec:problems}
+\section{The elaborator component of today's ITPs}\label{sec:elaborator}
 
 An elaborator takes in input a \emph{partial term} and optionally a
 type, and returns the closest term similar to the input one such that
@@ -385,7 +386,7 @@ an implementation of the metasenv data structure, and all related operations.
 Does this idea work out of the box? Unfortunately not quite.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{$\lambda$Prolog meets partial terms}
+\section{$\lambda$Prolog meets partial terms}\label{sec:problems}
 
 We already know from~\cite{jlp98} that $\lambda$Prolog is the minimal
 extension of Prolog that allows to implement inductive predicates over
@@ -827,7 +828,7 @@ run, no compilation chain).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Towards an elaborator for CIC}\label{sec:elaborator}
+\section{Towards an elaborator for CIC}\label{sec:cicelaborator}
 We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing coercions. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output Verbatim, leaving to additional rules in the elaborator the introduction of coercions.
 
 In place of following Matita and Coq algorithm, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
