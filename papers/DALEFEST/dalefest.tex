@@ -69,8 +69,9 @@ binding representation, $\alpha$-conversion, renaming and
 instantiation. Structural induction over syntax with binders is also
 made trivial by combining universal quantification and implication
 following the very same pattern used in Logical Frameworks like LF
-(also called $\lambda$P). Indeed, LF, endowed with an HOLP semantics
-like \textcolor{red}{in ???(ELF? Beluga? MMT?)} is just a sub-language of
+(also called $\lambda$P). Indeed, LF endowed with an HOLP semantics,
+% like \textcolor{red}{in ???(ELF? Beluga? MMT?)} 
+is just a sub-language of
 $\lambda$Prolog.
 
 The ``hello world'' example of $\lambda$Prolog is therefore the
@@ -116,11 +117,10 @@ ELPI is able to run such type checker on the Automath's proof terms of
 Landau's Grundlagen reasonably fast.
 In Section~\ref{sec:kernel} we confirm the answer again by implementing a
 kernel for a generic Pure Type System (PTS) that supports cumulativity between
-sorts as well. We then instantiate the PTS to the one of Matita and we
+sorts. We then instantiate the PTS to the one of Matita and we
 modularly add to the kernel support for globally defined constants and
-primitive inductive types, following the variant of the Calculus of Inductive
-Constructions of Matita. Finally, we embed ELPI in Matita and divert all calls
-to the kernel written in $\lambda$Prolog in order to test it on the arithmetic
+primitive inductive types, following the variant of CIC of Matita. Finally, we embed ELPI in Matita and divert all calls
+to the $\lambda$Prolog kernel in order to test it on the arithmetic
 library of the system.
 
 \paragraph{From proof-checking to interactive proving.}
@@ -136,7 +136,6 @@ In Section~\ref{sec:elaborator} we recall what an elaborator does and we explain
 In Section~\ref{sec:problems} we pose again the same question we posed for the kernel. Is $\lambda$Prolog suitable as a very high level programming language to implement an elaborator? If not, what shall be added? We conclude that $\lambda$Prolog is not suitable and, combining and extending existing ideas in the literature, we introduce the first Constraint Programming extension of $\lambda$Prolog. We also implemented the language extensions in the ELPI system.
 
 In Section~\ref{sec:cicelaborator} we work towards an implementation of an elaborator for CIC written in ELPI, obtained extending modularly a kernel presented in Section~\ref{sec:kernel}. The implementation is the first major use case for the language.
-
 The final Section~\ref{sec:conclusion} contains comparisons with related work and future works.
 
 \section{A modular kernel for CIC}\label{sec:kernel}
@@ -173,19 +172,22 @@ of (arr A Bx) (sort K) :-
  match_sort TA I, match_sort TB J, max I J K.
 \end{Verbatim}
 
-\textcolor{red}{<BEGIN>}Note that the rules are syntax directed, i.e. with explicit calls to
-\verb+sub+.  The more widesprad presentation on-paper presentation is more elegant and compact but 
-uses in a fundamental way non determinism (hence results in too much
-backtracking) by simply adding:
-
-\begin{Verbatim}
-of A C :- of A B, sub B C .
-\end{Verbatim}
-
-Moreover, integrating \verb+sub+ into \verb+of+ infers multiple types for a term. The syntax directed rules, instead, always infer just its most general type, in the sense of Luo~\cite{ecc}.
-
-\textcolor{red}{<END>
-CSC: NON MI PIACE TANTO IL TESTO. IN ALTERNATIVA CITARE ARTICOLO SU SYNTAX DIRECTED RULES + QUELLO DI LUO}
+% \textcolor{red}{<BEGIN>}
+The rules above have the merit of being syntax directed, and hence
+always infer just its most general type, in the sense of Luo~\cite{ecc}.
+% , i.e. with explicit calls to
+% \verb+sub+.  The more widesprad presentation on-paper presentation is more elegant and compact but 
+% uses in a fundamental way non determinism (hence results in too much
+% backtracking) by simply adding:
+% 
+% \begin{Verbatim}
+% of A C :- of A B, sub B C .
+% \end{Verbatim}
+% 
+% Moreover, integrating \verb+sub+ into \verb+of+ infers multiple types for a term. The syntax directed rules, instead, always infer just its most general type, in the sense of Luo~\cite{ecc}.
+% 
+% \textcolor{red}{<END>
+% CSC: NON MI PIACE TANTO IL TESTO. IN ALTERNATIVA CITARE ARTICOLO SU SYNTAX DIRECTED RULES + QUELLO DI LUO}
 
 \paragraph{Reduction and conversion rules: a trivial but inefficient implementation. }\label{sec:inefficient}
 To implement \verb+sub+, \verb+match_sort+ and
@@ -286,7 +288,8 @@ ultimately produce partial proof terms that are elaborated. The more
 advanced is the elaborator, the simpler the code implementing tactics
 can be.
 
-\subsection{Implementing an elaborator: state of the art}  %%%%%%
+%\subsection{Implementing an elaborator: state of the art}  %%%%%%
+\paragraph{Implementing an elaborator: state of the art.}  %%%%%%
 
 The elaborators of the majority of the provers mentioned above are all
 implemented according to the same schema: the syntax of terms is augmented with
@@ -347,7 +350,8 @@ The global algorithm is therefore split in multiple languages, defying the hope
 for static analysis and documentation of the elaborator.
 \end{description}
 
-\subsection{The proposed approach: semi shallow embedding}
+%\subsection{The proposed approach: semi shallow embedding}
+\paragraph{The proposed approach: semi shallow embedding.}
 
 The motivation of our research is to improve over the latter issues by
 identifying an high level (logic) programming language suitable for
@@ -405,7 +409,8 @@ extension of Prolog that allows to implement inductive predicates over
 syntax containing binders. Does it work when applied to data that is
 meant to contain existentially quantified metavariables too?
 
-\subsection{From generative semantics to constraints} %%%%%%%%%%%
+% \subsection{From generative semantics to constraints} %%%%%%%%%%%
+\paragraph{From generative semantics to constraints.} %%%%%%%%%%%
 \label{sec:delay}
 
 Consider the $\lambda$-term \verb+(lam a\ P a)+ that encodes a
@@ -500,7 +505,8 @@ managing explicitly backtracking and goal resumption.  Moreover, the automatic r
 constraints makes it impossible to obtain an ill-typed term by
 instantiation: the code is correct by construction.  Last, it lets one selectively disable the undesired generative semantics of predicates like \verb+of+, \verb+lt+, \ldots.
 
-\subsection{Constraint propagation as meta-theorems on ground terms} %%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{Constraint propagation as meta-theorems on ground terms} %%%%%%%%%%%%%%%%%%%%%%%%%%
+\paragraph{Constraint propagation as meta-theorems on ground terms.} %%%%%%%%%%%%%%%%%%%%%%%%%%
 
 In many situations, the constraints that accumulate over time are not
 independent, and sometimes sets of constraints can be rewritten in
@@ -655,7 +661,8 @@ The new goal eventually assigns \verb+T+ and \verb+S+, and its success
 or failure is semantically equivalent to the satisfiability of the
 second constraint on \verb+P+, that is removed.
 
-\subsubsection{Automatic alignment of goals}
+%\subsubsection{Automatic alignment of goals}
+\paragraph{Automatic alignment of goals.}
 \label{sec:realchr}
 
 Matching of $\lambda$Prolog goals is a delicate matter: eigenvariables
@@ -709,7 +716,8 @@ to which the meta variable is applied with the following syntax:
 inspection of the syntax is again perfectly reasonable and allowed.
 We put this feature to good use in the next section.
 
-\subsection{Meta level: elegant but overkill}
+% \subsection{Meta level: elegant but overkill}
+\paragraph{Meta level: elegant but overkill.}
 
 The operational semantics of the rule
 $S_1 \setminus S_2 ~|~ G \iff S_3$ replaces $S_2$ with $S_3$.
@@ -819,7 +827,8 @@ In Section~\ref{sec:cicelaborator} we use the low level primitives \verb+mode+, 
 
 In all cases, the low level primitives above can be understood in term of the high level language provided before. In particular, semantically \verb+mode+ already acts as the request of delaying the goal when certain inputs are flexible. Then, in the goals that match metavariables, one can either confirm the intention of delaying (via \verb+$delay+), or he can provide a propagation rule by immediately issuing a new query to be executed by the interpreter. In the future we plan to study the elaboration of the syntax based on the low level primitives to the high level syntax and its clean declarative semantics.
 
-\subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
+%\subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
+\paragraph{ELPI = $\lambda$Prolog + CHR.}\label{sec:elpi}
 
 We implemented the language described in the previous sections in an efficient interpreter, written in OCaml, that we called ELPI (Embedded Lambda Prolog Interpreter) and that is open source and downloadable from the Web.
 In addition to the new programming constructs that deal with
@@ -854,7 +863,6 @@ Despite the differences above, we tried very hard to maintain backward
 compatibility with Teyjus and its standard library. Indeed, we are able to
 execute in ELPI all the code from Teyjus that we collected from the Web, up to
 a very few minor changes to the source code, mostly due to 2 and 3.
-
 Last, ELPI is a pure interpreter written in OCaml.  Embedding it into
 larger applications like Coq or Matita is easy (no external program to
 run, no compilation chain).
@@ -862,7 +870,7 @@ run, no compilation chain).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Towards an elaborator for CIC}\label{sec:cicelaborator}
-We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing coercions. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of coercions.
+We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing type casts. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of type casts.
 
 In place of following the algorithm of Matita and Coq, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
 
@@ -870,20 +878,23 @@ To implement the elaborator, we need to consider all the predicates defined by i
 
 \paragraph{Type-checking: the \texttt{of} predicate.}
 Using a mode declaration plus \verb+$delay+, we delay type-checking a
-metavariable, turning it into a proof obligation, i.e. a sequent of the form $\Gamma \vdash \mathtt{of}~X~t$\textcolor{red}{CSC: io ho usato $\vdash$ qui e là ma forse è meglio usare sempre \texttt{?-}} where $\Gamma$ holds type declarations for variables (\verb+of x t+) or value assignments (\verb+val x t v nf+).
+metavariable, turning it into a proof obligation, i.e. a sequent of the form
+\verb+G ?- of X t+
+where \verb+G+ holds type declarations for variables (\verb+of x t+) or value assignments (\verb+val x t v nf+).
 
 \begin{Verbatim}
 mode (of i o).
 of (?? as K) T :- !, $delay (of K T) K.
 \end{Verbatim}
 
-We then declare one constraint propagation rule that corresponds to a special case of unicity of typing in the case of dependently typed languages. The special case consists of the case when one of the two obligations is \emph{canonical}, i.e. it is of the form $\Gamma \vdash \mathtt{of} (X~x_1~\ldots~x_n)~t$ where all the $x_i$s are distinct variables or, equivalently, when $X~x_1~\ldots~x_n$ is in the pattern fragment $L_\lambda$ discovered by Miller.
+We then declare one constraint propagation rule that corresponds to a special case of uniqueness of typing in the case of dependently typed languages: one of the two obligations is \emph{canonical}, i.e. it is of the form \verb+G ?- of (X x1 .. xn) t+ where all the \verb+xi+ are distinct variables or, equivalently, when \verb+X x1 .. xn+ is in the pattern fragment $L_\lambda$ discovered by Miller.
 
-The restriction may seems severe, but, once a canonical typing constraint enters the set of delayed goals, it is simple to reduce the whole set to just the canonical one plus additional conversion constraints. Moreover, the first time a metavariable is generated in an interactive prover like Matita its typing constraint is canonical by construction. Therefore, it is customary both in theory~\cite{jojgov} and implementation~\cite{bidir} to always keep only canonical constraints, that are collected in a set called \emph{metavariable environment} and that are the only proof obligations presented to the user.
+The restriction may seems severe, but, once a canonical typing constraint enters the set of delayed goals, it is simple to reduce the whole set to just the canonical one plus additional conversion constraints. Moreover, the first time a metavariable is generated in an interactive prover like Matita its typing constraint is canonical by construction. Therefore, it is customary both in theory~\cite{jojgov} and implementation~\cite{bidir} to always keep only canonical constraints, that are collected in a set called \emph{metavariable environment} (metasenv) and that are the only proof obligations presented to the user.
 
-The propagation works as follow: let $G_1 \vdash \mathtt{of} (X~x_1~\ldots~x_n) u_1$ be the canonical sequent and $G_2 \vdash \mathtt{of} (X~t_1~\ldots~t_n) u_2$ be the one to be simplified. First we compute the type of $x_1$ in $G_1$ and of $x_2$ in $G_2$, imposing as a new constraint their convertibility in $G_1 \cup G_2$. Then we proceed recursively over $x_2,\ldots,x_n$ and $t_2,\ldots,t_n$ after assigning $t_1$ to $x_1$ via \verb+val+ in $G_1$. When the two lists become empty, we generate a final constraint to check if $u_1$ is convertible with $u_2$.
+The propagation works as follow: let \verb+G1 ?- of (X x1 .. xn) u1+ be the canonical sequent and \verb+G2 ?- of (X t1 .. tn) u2+ be the one to be simplified. First we compute the type of \verb+x1+ in \verb+G1+ and of \verb+t1+ in \verb+G2+, imposing as a new constraint their convertibility in the union of \verb+G1+ and \verb+G2+. Then we proceed recursively over \verb+x2 .. xn+ and \verb+t2 .. tn+ after assigning \verb+t1+ to \verb+x1+ via \verb+val+ in \verb+G1+. When the two lists become empty, we generate a final constraint to check if \verb+u1+ is convertible with \verb+u2+.
 
-To detect canonicity, we use the ad-hoc extension predicate \verb+$is_name+ of ELPI that holds iff the argument is a universal variable. The syntax $G \Rightarrow L$ when $G$ is a list of propositions is equivalent in ELPI to assuming the conjunction of the predicates in $G$.
+To detect canonicity, we use the ad-hoc extension predicate \verb+name+ of ELPI that holds iff the argument is a universal variable. Recall tat the syntax \verb+G => L+ when \verb+G+ is a list of propositions is equivalent in ELPI to assuming the conjunction of the predicates in \verb+G+.
+\marginpar{see fix to is canonical}
 
 \begin{Verbatim}
 constraint of val {
@@ -892,7 +903,7 @@ constraint of val {
 }
 
 is_canonical [].
-is_canonical [X|XS] :- $is_name X, is_canonical XS.
+is_canonical [X|XS] :- name X, not (mem X XS), is_canonical XS.
 
 % (G2 ?- T2) is the canonical one
 compat G2 [] T2 G1 [] T1 H :- append G1 G2 G12, H = (G12 => conv T2 T1).
@@ -905,7 +916,11 @@ compat G2 [X2|XS2] T2 G1 [X1|XS1] T1 K :-
  K = (H1, H2, H3, K2).
 \end{Verbatim}
 
-\paragraph{Universe constraints: the \texttt{lt,succ,max} predicates.}
+Last, remark that the alignment mode selected only checks
+that \verb+X1+ and \verb+X2+ are the same metavariable and
+makes all eigenvariables distinct.
+
+\paragraph{Universe constraints: the \texttt{lt}, \texttt{succ}, \texttt{max} predicates.}
 All three predicates must be delayed when at least one of the arguments is flexible. However, satisfiability of the constraints is a necessary requirement for logical consistency. In case of violation of the constraints, it is indeed easy to encode a form of Russel's paradox.
 
 In order to verify satisfiability, we could devise a set of propagation rules
@@ -924,21 +939,18 @@ max N M X :- leq N X, leq M X.  % max relaxed to any upper bound
 ... /* boilerplate code to delay leq and ltn over flexible terms */
 
 constraint leq ltn {
-  % incompatibility                     % irriflexivity
-  rule (leq X Y) (ltn Y X) <=> false.   rule (ltn X X) <=> false.
-  
-  % reflexivity                         % antisymmetry
-  rule \ (leq X X).                     rule (leq X Y) \ (leq Y X) <=> (Y = X).
-
-  ...
+  % incompatibility and irreflexivity    
+  rule (leq X Y) (ltn Y X) <=> false.  rule (ltn X X) <=> false.
+  % reflexivity, antisymmetry, ...
+  rule \ (leq X X). rule (leq X Y) \ (leq Y X) <=> (Y = X). ...
 }
 \end{Verbatim}
 
-\paragraph{Reduction: the \texttt{whd1,whd*} predicates.}
+\paragraph{Reduction: the \texttt{whd1},\texttt{whd*} predicates.}
 The predicate \verb+whd*+, defined in terms of \verb+whd1+, computes the normal form of the input. It is used by \verb+match_sort+ and \verb+match_arr+ to verify if the normal form has a given shape. Moreover, it calls itself recursively to compute the normal form of arguments according to the call-by-need strategy.
 
-The typing system we are implementing cannot distinguish between a term and its normal form. Therefore, when computing the normal form of a flexible input \verb+X+, it is meaningless to delay a goal stating that \verb+Y+ is the normal form of \verb+X+, because typing will not distinguish between them.
-Therefore, we will just return \verb+X+ as the normal form of \verb+X+ by letting \verb+whd1+ fail over flexible terms.
+The typing system we are implementing cannot distinguish between a term and its normal form. Therefore, when computing the normal form of a flexible input \verb+X+, it is meaningless to delay a goal stating that \verb+Y+ is the normal form of \verb+X+, because typing does not distinguish them.
+Therefore, we just return \verb+X+ as the normal form of \verb+X+ by letting \verb+whd1+ fail over flexible terms.
 \begin{Verbatim}
 mode (whd1 i i o).
 whd1 ?? _ _ :- fail.
@@ -993,8 +1005,7 @@ comp (?? as V1) [] M T2 [] :- V1 = T2.
 comp (?? as V1) [] D T2 S2 :- whd1 T2 S2 (_ \ t2 \ s2 \ comp V1 [] D t2 s2).
 
 % FAIL
-comp ?? [] _ _ _ :- !, fail. % to avoid falling back in the fast path of the
-                             % kernel
+comp ?? [] _ _ _ :- !, fail. % to avoid the fast path of the kernel
 
 % MIMIC RULES (same rules as the kernel)
 mcomp (sort I) eq (sort I) :- !.
@@ -1006,7 +1017,7 @@ mcomp (arr TY1 F1) M (arr TY2 F2) :-
  !, comp TY1 [] eq TY2 [], (pi x \ comp (F1 x) [] M (F2 x) []).
 \end{Verbatim}
 
-The code assumes all metavariable occurrences to be in Miller's pattern fragment $L_\lambda$. Otherwise, calls like \verb+V1 = app X Y+ in the code may be automatically delayed by ELPI breaking the algorithm.
+The code assumes all metavariable occurrences to be in $L_\lambda$. Otherwise, calls like \verb+V1 = app X Y+ in the code may be automatically delayed by ELPI breaking the algorithm.
 
 Several tests already pass, but we are currently still developing the full set of rules that reflect the algorithm developed by Matita. Once completed and made functional equivalent, we plan to test the elaborator written in $\lambda$Prolog against the original one for debugging and performance analysis.
 
@@ -1028,14 +1039,14 @@ logical framework (LF) eventually animated by SLD resolution is not new,
 little has been done to reuse the same technology for the elaborator
 component.  For example MMT~\cite{mmt} ``meta'' system lets one define kernel
 rules in LF, but resorts to the Scala language for the elaborator.
-Isabelle lets one describe the axiom of a logic in an LF framework and
+Isabelle lets one describe the axioms of a logic in an LF framework and
 exposes the higher order unification algorithm to the higher layers of
 the system, like the proof language one.  Incidentally the dominant
 logic implemented in Isabelle is HOL, that lacks dependent types, hence
-needs no term comparison algorithm based narrowing.  Hence, to our knowledge,
+needs no term comparison algorithm based on narrowing.  As a consequence,
 no need to extend such algorithm to encompass more rewriting is perceived,
-and as a consequence no way to extend such algorithm is given to the user.
-The Dudukti~\cite{dedukti} language lets one describe the axiom of a logic
+and no way to extend such algorithm is given to the user.
+The Dudukti~\cite{dedukti} language lets one describe the axioms of a logic
 in LF modulo equational theories.  Unfortunately, at the time of writing,
 the system lacks an elaborator.
 
@@ -1043,15 +1054,16 @@ Describing the elaborator in terms of constraints was a choice first
 made in Agda version~2~\cite{Agda} and more recently in Lean~\cite{Lean}.
 Both system implement they own, ad-hoc, constraint solver, the former system in
 Haskell, while the latter in C++.  The approach we follow in the paper
-is to provide a programming platform where constraint and their propagation
+is to provide a programming platform where constraints and their propagation
 rules are first class, to ease documentation, experimentation and extension
 of the implemented system.
 
 A big advantage of writing the code in $\lambda$Prolog is the possibility of
-using the Abella~\cite{Abella} theorem prover to prove its correctness.
+using the Abella~\cite{Abella} theorem prover to mechanically check
+its correctness.
 In particular, Abella can be used to prove the soundness of all constraint propagation rules. For example, for an early prototype of the elaborator presented
 in this paper, the typing constraint propagation rule implementing uniqueness of
-typing was proved correct in Abella~\cite{Abella}. However, the current version of Abella reasons on the big step operational semantics of $\lambda$Prolog programs without cuts. Because delaying a goal means interrupting execution in the middle, the small step version of the operational semantics would be the appropriate tool to use instead. For example, in the aforementioned proof of unicity of typing, we had to assume a certain invariant on the $\lambda$Prolog context that is the context of the delayed typing sequent. In order to know that the invariant really holds during computation, we need to prove that, if it holds initially, it holds after any number of small execution steps. Currently, this statement cannot even be stated in Abella. In the future, we would like to re-design Abella around a small step operational semantics to overcome this limitation and also to be able to reason over cuts.
+typing was proved correct in Abella. However, the current version of Abella reasons on the big step operational semantics of $\lambda$Prolog programs without cuts. Because delaying a goal means interrupting execution in the middle, the small step version of the operational semantics would be the appropriate tool to use instead. For example, in the aforementioned proof of unicity of typing, we had to assume a certain invariant on the $\lambda$Prolog context that is the context of the delayed typing sequent. In order to know that the invariant really holds during computation, we need to prove that, if it holds initially, it holds after any number of small execution steps. Currently, this statement cannot even be stated in Abella. In the future, we would like to re-design Abella around a small step operational semantics to overcome this limitation and also to be able to reason over cuts.
 
 As a future work we hope in Abella to fully prove correct, although not complete, the
 elaborator component, so to call into question the standard design of

@@ -72,7 +72,7 @@ at every step tries $\alpha$-conversion (i.e. $\lambda$Prolog equality) and
 congruence rules to avoid unnecessary reductions.
 
 In order to perform weak head reductions lazily, we obtain \verb+conv+ and \verb+sub+ as two instances of a \verb+comp+ comparison predicate that works on two reduction machine statuses. The third argument is \verb+eq+ if the intended comparison is \verb+conv+ while \verb+leq+ for \verb+sub+.
-
+\marginpar{forall2 = map}
 \begin{Verbatim}
 type conv term -> term -> prop.
 type sub term -> term -> prop.
@@ -85,7 +85,7 @@ sub T1 T2 :- comp T1 [] leq T2 [].
 comp T1 S1 _ T1 S1 :- !.
 comp (sort I) [] leq (sort J) [] :- lt I J.
 % congruence + fast path rule
-comp X S1 _ X S2 :- forall2 S1 S2 conv, !.
+comp X S1 _ X S2 :- map S1 S2 conv, !.
 % congruence rules
 comp (lam T1 F1) [] _ (lam T2 F2) [] :- conv T1 T2, pi x \ conv (F1 x) (F2 x).
 comp (arr T1 F1) [] D (arr T2 F2) [] :- conv T1 T2, pi x \ comp (F1 x) [] D (F2 x) [].
