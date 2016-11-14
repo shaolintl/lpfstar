@@ -329,11 +329,11 @@ kernel} (Huet's terminology).
 Worse than that, such twin components need to agree on ground terms.
 Typically a proof term is incrementally built by the elaborator:
 starting from a meta variable that has the type of
-the conjecture the proof commands make progress by instantiating such
-meta with partial terms.  Once there are no unresolved meta variables left,
+the conjecture the proof commands make progress by instantiating it
+with partial terms.  Once there are no unresolved meta variables left,
 the ground term is checked, again and in its totality, by the kernel.
-Bugs in the elaborator are detected by the kernel, letting the user 
-\textcolor{red}{??? SENTENZA INCOMPLETA}
+%Bugs in the elaborator are detected by the kernel, letting the user 
+%\textcolor{red}{??? SENTENZA INCOMPLETA}
 \item[extensibility of the elaborator]
 Finally, the elaborator is the brain of the system, but it is oblivious of the
 pragmatic ways to use the knowledge in the prover library, e.g.  to
@@ -387,7 +387,7 @@ implementing proof commands, can take real advantage from a
 programming language where backtracking is built in, in
 particular to write proof commands performing proof search.
 
-The Higher order Abstract Syntax approach identifies the object
+The Higher Order Abstract Syntax approach identifies the object
 language binders and the meta language ones, obtaining $\alpha$-conversion
 and $\beta$-reduction for free.  The semi shallow embedding~\cite{holsuperlight} we expect to use in our language
 \emph{identifies the metavariables of the object language with the 
@@ -405,6 +405,9 @@ extension of Prolog that allows to implement inductive predicates over
 syntax containing binders. Does it work when applied to data that is
 meant to contain existentially quantified metavariables too?
 
+\subsection{From generative semantics to constraints} %%%%%%%%%%%
+\label{sec:delay}
+
 Consider the $\lambda$-term \verb+(lam a\ P a)+ that encodes a
 partial proof of $\forall A, A \Rightarrow A$.
 If we run the following query, the computation diverges:
@@ -413,11 +416,6 @@ If we run the following query, the computation diverges:
 ?- of (lam T a\ P a) (arr (sort I) a\ arr a _\ a)
 \end{Verbatim}
 
-\textcolor{red}{Il salto fra la frase prima e addirittura l'inizio di una sottosezione è atroce. Magari iniziare la sottosezione prima di ``Consider''?}
-
-\subsection{From generative semantics to constraints} %%%%%%%%%%%
-\label{sec:delay}
-
 The rule for $\lambda$-abstraction applies fine, but generates the problematic
 goal \verb+of P (arr x _\ x)+ for some fresh \verb+x+.  Then, the type checking
 rule for application, which head is \verb+of (app M N) BN+, applies
@@ -425,26 +423,26 @@ indefinitely.
 
 The \verb+of+ predicate inherits from Prolog a generative semantics:
 when called recursively on a flexible input, it enumerates all
-instances trying to find the ones that are well typed. Even when proof
-search does not diverge, the behaviour obtained is not the one
+instances trying to find the ones that are well typed. Even when 
+the computation does not diverge, the behaviour obtained is not the one
 expected from an elaborator for an \emph{interactive} prover: the
 elaborator is not meant to fill in the term, unless the choice is
 obliged. On the contrary, it should leave the meta variable not
 instantiated and should \emph{remember} (in some kind of metasenv) the need for verifying if the
-predicate holds later on, when the metavariable gets instantiated. In
+typing judgement holds later on, when the metavariable gets instantiated. In
 the example above, type-checking \verb+(lam T a\ P a)+ forces the
 system to remember that term of type \verb+(arr x _\ x)+ has to be
 provided (in a context where \verb+of x (sort I)+ holds), that in turn
-corresponds to the proof obligation $A : \mbox{sort I} \vdash A \to A $.
+corresponds to the proof obligation $A : \mbox{sort I} \vdash A \Rightarrow A $.
 
 As we mentioned earlier the sometimes undesired generative semantics
 is inherited from Prolog.
 Nevertheless, all modern Prolog engines provide a \verb+var/1+
 built-in to test/guard predicates against flexible input, provide
-one/many variants of \verb+delay/2+ to suspend a goal until the input
+one/many variants of \verb+delay/2+ to suspend a goal until the ``input''
 becomes rigid, and provide modes declarations to both
 statically/dynamically detect problematic goals and to (semi)
-automatically delay (suspend) them.
+automatically suspend them.
 For example, by using the \verb+delay+ pack of SWI-Prolog~\cite{SWI}, the goal
 \verb+plus(X,1,Y)+ is delayed until either \verb+X+ or \verb+Y+ are
 instantiated.  Delayed goals can be thought as \emph{constraints} over the
@@ -456,7 +454,7 @@ break the clean declarative semantics of $\lambda$Prolog, others
 respect it. $\lambda$Prolog does not provide any of these facilities,
 or at least, does not expose them to the programmer. For example, the Teyjus
 system delays unification problems outside L$_\lambda$ and implements a complex
-machinery to wake up delaied goals that re-enter the fragment, but does not
+machinery to wake up delayed goals that re-enter the fragment, but does not
 expose any primitive to delay other kind of goals.
 
 At the light of all these considerations we extend the ELPI
@@ -491,16 +489,16 @@ In turn such check can either:
 \item[advance] and generate one or more new constraints if \verb+t+ is partial
 	e.g. \verb+t = x\lam x w\Q x w+.  If \verb+t+ is generated by
 	a proof command, then this corresponds to a proof step that
-	generates one or more new goals.
+	opens one or more new goals.
 \end{description}
-The three behaviors above perfectly match the desired behavior of an
-elaborator.  In addition to that, the set of delayed goals implicitely kept
+The three scenarios above perfectly match the desired behavior of an
+elaborator.  In addition to that, the set of delayed goals implicitly kept
 by the language interpreter
 represents faithfully the metasenv data structure, relieving the
 programmer to manage it himself, threading it through all typing rules and
-managing explicitly backtracking and goal resumption.  More that that, the automatic resumption of typing
+managing explicitly backtracking and goal resumption.  Moreover, the automatic resumption of typing
 constraints makes it impossible to obtain an ill-typed term by
-instantiation: the code is correct by construction.  Last, it lets one selectively disable the undesired generative semantics of predicates like \verb+of,lt,+\ldots.
+instantiation: the code is correct by construction.  Last, it lets one selectively disable the undesired generative semantics of predicates like \verb+of+, \verb+lt+, \ldots.
 
 \subsection{Constraint propagation as meta-theorems on ground terms} %%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -561,19 +559,21 @@ enables the following applications:
 \begin{description}
 \item[forward reasoning during search] When propagation rules are theorems
         over the ground instances,
-	then propagation respect the declarative, proof theoretic semantics
+	then propagation respects the declarative, proof theoretic semantics
         of $\lambda$Prolog. In particular, constraint propagation is just a
         controlled form of forward reasoning, while SLD resolution only
 	does backward reasoning.
 \item[code optimizations given by the meta theory] of the object
 	language.  In the running example, uniqueness of typing is key to keep
 	the implicit metasenv linear in the number of missing sub-proofs.
-        In turns, this greatly reduces the number of checks to be performed when
+        In turn, this greatly reduces the number of checks to be performed when
         a metavariable is instantiated, and it allows to directly present to
         the user the set of constraints as the frontier of the proof search.
 \item[turn checking into inference]  By replacing the
-	predicates \verb+<,max,succ+ with generic order constraints
-	\verb+leq,ltn+ one gets an elaborator that works with floating sorts~\cite{algebraic},
+	predicates \verb+<+, \verb+max+, \verb+succ+ with generic 
+	order constraints
+	\verb+leq+, \verb+ltn+ one gets an elaborator that works with 
+	floating sorts~\cite{algebraic},
 	rather than fixed integers, and maintains an acyclic graph of
 	constraints linking these. More generically, we can turn type checking into type inference and elaboration.
 \end{description}
@@ -599,7 +599,7 @@ it is a first class representation of the $\lambda$Prolog context
 (that augments the original program).  
 The guard \verb+equiv G1 G2+ is a user defined $\lambda$Prolog program
 checking that the two context are equivalent (i.e.
-\textcolor{red}{compare equal as sets CSC:???}).  \verb+G1 => conv T1 T2+ (syntactic sugar for \verb+H1 => ... => HN => conv T1 T2+ where
+\textcolor{red}{contain the same items, disregarding order and multiplicity}).  \verb+G1 => conv T1 T2+ (syntactic sugar for \verb+H1 => ... => HN => conv T1 T2+ where
 \verb+G1 = [H1, ..., HN]+) is the new goal generated by the rule.
 The alignment expressions, \verb+> X ~ Y+, asserts \verb+X+ and \verb+Y+
 are the same meta variable and finds a bijection between the
@@ -662,7 +662,7 @@ Matching of $\lambda$Prolog goals is a delicate matter: eigenvariables
 are fresh names, not fixed constants, and their semantics is quite
 different~\cite{nabla}.  
 In particular, matching goal $H$ against goal $G$ amounts
-to solving this equation written using the nabla quantifier of~\textcolor{red}{\cite{XXX}}:
+to solving this equation written using the nabla quantifier of~\cite{nabla}:
 
 \begin{math}
  \nabla x_1\ldots x_n, \mathcal{H} = \nabla y_1\ldots y_m, \mathcal{G}
@@ -676,12 +676,12 @@ languages.  If, by hangling higher order constraints, we make its core
 operation, matching, even more expensive, we are unlikely to obtain a
 working system.
 
-Luckily the user case that drove our design seems to be on a lucky
+Providentially the use case that drove our design seems to be on a lucky
 spot: all relevant names are visible by the key of the delayed goal.
 Indeed, in the Curry-Howard homomorphism, a meta variable represents a
 sequent, and its proof (and type) can only use variables in scope of
 the meta variable.  The design choice we make is to forbid the
-$\nabla$ in the patterns of CHR rules, and implicitly consider as many
+$\nabla$ quantifier in the patterns of CHR rules, and implicitly consider as many
 $\nabla$ quantifications as eigenvariables visible to the key variable
 of constraint being matched by the CHR head.  This way we can impose
 the trivial bijection between the names in the pattern and the names
@@ -743,7 +743,7 @@ constraint conv {
 \end{Verbatim}
 
 The second rule is a recursive one that exploits the theorem saying
-that the intersection of 2 groups is a group: in order to find a group \verb+X+ whose carrier is the intersection of the two sets \verb+A+ and \verb+B+, the heuristic suggests to recursively discover two groups \verb+GA+ and \verb+GB+ of carrier \verb+A+ and \verb+B+, and to instantiate \verb+X+ with the group intersection of \verb+GA+ and \verb+GB+.
+that the intersection of two groups is a group: in order to find a group \verb+X+ whose carrier is the intersection of the two sets \verb+A+ and \verb+B+, the heuristic suggests to recursively discover two groups \verb+GA+ and \verb+GB+ of carrier \verb+A+ and \verb+B+, and to instantiate \verb+X+ with the group intersection of \verb+GA+ and \verb+GB+.
 
 Remark how little we use of CHR in this rule: only one head, no alignment,
 no guard (i.e. no need to freeze).
@@ -794,14 +794,17 @@ The syntax \verb+(?? K L as X)+ seen in \ref{sec:realchr} is also
 available, and lets one access the arguments of a flexible term.
 This lets one extend the conversion predicate (unification in the
 elaborator) to cover terms outside L$_\lambda$.  An emblematic example is
-the following one: \textcolor{red}{CSC: qua non si capisce. È un goal sospeso? È il lhs di una regola di propagazione? Usavi questa sintassi prima per le query, e non può essere una query}
+the following one:
 
 \begin{Verbatim}
-?- conv (?? F [nat_of_ord x]) T
+rule (G ?- conv (?? F [nat_of_ord x]) T)
+  | ((pi y\ copy (nat_of_ord x) y => copy T (T' y)),
+     (pi w\ copy (T' x) (T' w))) <=> (F = T')
 \end{Verbatim}
 
 When \verb+x+ never occurs in \verb+T+ alone, only inside the
-\verb+nat_of_ord+ context.  Such example occurs very frequently
+\verb+nat_of_ord+ context: \verb+T'+ is \verb+T+ where all occurrences
+of \verb+nat_of_ord x+ are bound.  Such example occurs very frequently
 in the~\cite{bigop} library for Coq, where theorems about iterated
 operations over finite domains are provided.
 For example the $\sum_{i < 7} (F~i)$ expression hides
@@ -812,9 +815,9 @@ so solve the goal above makes the use of these lemma painful, since
 one may have to provide \verb+F+ by hand, instead of having it
 automatically inferred.
 
-In Section~\ref{sec:cicelaborator} we will use the low level primitives \verb+mode,delay+ and \verb+is_var+ to implement our elaborator. In some cases, we will combine \verb+mode+ and \verb+delay+ just to implement the high level \verb+delay+ construct. In some other cases we will use \verb+mode+ and pattern matching over the syntax of goals to implement heuristics without triggering delay. 
+In Section~\ref{sec:cicelaborator} we use the low level primitives \verb+mode+, \verb+delay+ and \verb+var+ to implement our elaborator. In some cases, we combine \verb+mode+ and \verb+delay+ just to implement the high level \verb+delay+ construct. In some other cases we use \verb+mode+ and pattern matching over the syntax of goals to implement heuristics without triggering delay. 
 
-In all cases, the low level primitives above can be understood in term of the high level language provided before. In particular, semantically \verb+mode+ already acts as the request of delaying the goal when certain inputs are flexible. Then, in the goals that match metavariables, one can either confirm the intention of delaying (via \verb+$delay+), or he can immediately provide a propagation rule by immediately issuing a new query to be executed by the interpreter. In the future we plan to study the elaboration of the syntax based on the low level primitives to the high level syntax and its clean declarative semantics.
+In all cases, the low level primitives above can be understood in term of the high level language provided before. In particular, semantically \verb+mode+ already acts as the request of delaying the goal when certain inputs are flexible. Then, in the goals that match metavariables, one can either confirm the intention of delaying (via \verb+$delay+), or he can provide a propagation rule by immediately issuing a new query to be executed by the interpreter. In the future we plan to study the elaboration of the syntax based on the low level primitives to the high level syntax and its clean declarative semantics.
 
 \subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
 
