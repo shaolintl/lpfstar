@@ -1072,7 +1072,7 @@ In particular, Abella can be used to prove the soundness of all constraint propa
 in this paper, the typing constraint propagation rule implementing uniqueness of
 typing was proved correct in Abella. However, the current version of Abella reasons on the big step operational semantics of $\lambda$Prolog programs without cuts. Because delaying a goal means interrupting execution in the middle, the small step version of the operational semantics would be the appropriate tool to use instead. For example, in the aforementioned proof of uniqueness of typing, we had to assume a certain invariant on the $\lambda$Prolog context that is the context of the delayed typing sequent. In order to know that the invariant really holds during computation, we need to prove that, if it holds initially, it holds after any number of small execution steps. Currently, this statement cannot even be stated in Abella. In the future, we would like to re-design Abella around a small step operational semantics to overcome this limitation and also to be able to reason over cuts.
 
-We plan to compare in disciplined way the performance of the elaborator
+We plan to compare in a disciplined way the performance of the elaborator
 of Matita with the one presented in this paper, to precisely size the
 trade-off between the programming abstractions offered by the
 HOCLP language we have implemented and their runtime cost.
