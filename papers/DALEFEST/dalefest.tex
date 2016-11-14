@@ -813,6 +813,7 @@ In all cases, the low level primitives above can be understood in term of the hi
 
 \subsection{ELPI = $\lambda$Prolog + CHR}\label{sec:elpi}
 
+We implemented the language described in the previous sections in an efficient interpreter, written in OCaml, that we called ELPI (Embedded Lambda Prolog Interpreter) and that is open source and downloadable from the Web.
 In addition to the new programming constructs that deal with
 constraints, ELPI slightly differs from the version of $\lambda$Prolog
 implemented in Teyjus in a few minor aspects:
@@ -853,22 +854,22 @@ run, no compilation chain).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Towards an elaborator for CIC}\label{sec:cicelaborator}
-We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing coercions. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output Verbatim, leaving to additional rules in the elaborator the introduction of coercions.
+We are developing an elaborator for CIC as a modular extension of the kernel described in Sect.~\ref{sec:kernel}. The elaborator mimics as close as possible the behaviour of the one of Matita 0.99.1~\cite{bidir}, with the exception of the handling of universe constraints that follows Coq~\cite{algebraic}. For the time being, however, the elaborator can only instantiate metavariables that appear in the term, lacking the possibility of entirely modifying the input term, for example introducing coercions. To overcome this limitation, it is no longer possible to reuse the kernel type-checking rules are they are now: the type-checking judgement itself must give in output a new term, that is the elaboration of the term in input. All the rules of the kernel would just copy the input term in output verbatim, leaving to additional rules in the elaborator the introduction of coercions.
 
-In place of following Matita and Coq algorithm, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
+In place of following the algorithm of Matita and Coq, an alternative very promising choice would have been to mimic the elaborator described in~\cite{abel} and already presented via typing rules that yield a set of higher order unification constraints to be later solved. In the future, the choice to be closer to Matita will allow us to easily compare the performances of the elaborator written in ELPI with the one of Matita written in OCaml, in order to further optimize the ELPI interpreter.
 
 To implement the elaborator, we need to consider all the predicates defined by induction over the shape of terms, and either turn them into constraints to be propagated, or immediately suggest solutions.
 
 \paragraph{Type-checking: the \texttt{of} predicate.}
-Using a mode declaration plus \verb+$constraint+, we delay type-checking a
-metavariable, turning it into a proof obligation, i.e. a sequent of the form $\Gamma \vdash \mathtt{of}~X~t$ where $\Gamma$ holds type declarations for variables (\verb+of x t+) or value assignments (\verb+val x t v nf+).
+Using a mode declaration plus \verb+$delay+, we delay type-checking a
+metavariable, turning it into a proof obligation, i.e. a sequent of the form $\Gamma \vdash \mathtt{of}~X~t$\textcolor{red}{CSC: io ho usato $\vdash$ qui e là ma forse è meglio usare sempre \verb+?-+} where $\Gamma$ holds type declarations for variables (\verb+of x t+) or value assignments (\verb+val x t v nf+).
 
 \begin{Verbatim}
 mode (of i o).
-of (?? as K) T :- !, $constraint (of K T) K.
+of (?? as K) T :- !, $delay (of K T) K.
 \end{Verbatim}
 
-We then declare one constraint propagation rule that corresponds to a special case of unicity of typing in the case of dependently typed languages. The special case consists in the case when one of the two obligations is \emph{canonical}, i.e. it is of the form $\Gamma \vdash \mathtt{of} (X~x_1~\ldots~x_n)~t$ where all the $x_i$s are distinct variables or, equivalently, when $X~x_1~\ldots~x_n$ is in the pattern fragment $L_\lambda$ discovered by Miller.
+We then declare one constraint propagation rule that corresponds to a special case of unicity of typing in the case of dependently typed languages. The special case consists of the case when one of the two obligations is \emph{canonical}, i.e. it is of the form $\Gamma \vdash \mathtt{of} (X~x_1~\ldots~x_n)~t$ where all the $x_i$s are distinct variables or, equivalently, when $X~x_1~\ldots~x_n$ is in the pattern fragment $L_\lambda$ discovered by Miller.
 
 The restriction may seems severe, but, once a canonical typing constraint enters the set of delayed goals, it is simple to reduce the whole set to just the canonical one plus additional conversion constraints. Moreover, the first time a metavariable is generated in an interactive prover like Matita its typing constraint is canonical by construction. Therefore, it is customary both in theory~\cite{jojgov} and implementation~\cite{bidir} to always keep only canonical constraints, that are collected in a set called \emph{metavariable environment} and that are the only proof obligations presented to the user.
 
@@ -958,7 +959,7 @@ On \verb+match_sort+ and \verb+match_arr+ there is no consequence: the metavaria
 
 Conversion when at least one of the arguments is a flexible term amounts to higher order narrowing. Instead of delaying the goal, an heuristic already used in Matita immediately rewrites the constraint by solving the unification problem. The heuristic always favours projections to mimic (in Huet's terminology). Further heuristics are used in Matita to avoid projecting over flexible arguments, to make unification more predictable to the user. These heuristics are clearly incomplete, discarding all solutions but one and sometimes failing to find a solution when it exists. However, they are more general than the ones implemented in Coq and, from a practical perspective, they guess most of the time the unifier that is expected by the user when interacting with the ITP.
 
-The following code shows the clauses that deal with a flexible term (on the left hand side) to be unified with a rigid one on the right hand side. A simmetric set of rules is required for the dual case, and the code can obviously be unified with minor effort. Additional rules are required to deal with the flexible-flexible case.
+The following code shows the clauses that deal with a flexible term (on the left hand side) to be unified with a rigid one on the right hand side. A simmetric set of rules is required for the dual case, and the code can obviously be unified with minor effort. Additional rules, omitted here, are required to deal with the flexible-flexible case.
 
 \begin{Verbatim}
 mode (comp i i i i i).
