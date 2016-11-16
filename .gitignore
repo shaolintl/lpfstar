@@ -62,7 +62,10 @@ elpi/matita/matita/buildTimeConf.ml
 elpi/matita/matita/help/C/version.txt
 elpi/matita/matita/matita.conf.xml
 elpi/matita/depend-stamp
-elpi/matita/matita/matita.opt
 elpi/matita/matita/matitaGeneratedGui.ml
+elpi/matita/matita/matita.opt
 elpi/matita/matita/matitac.opt
 elpi/matita/matita/matitaclean.opt
+elpi/matita/matita/matita
+elpi/matita/matita/matitac
+elpi/matita/matita/matitaclean
