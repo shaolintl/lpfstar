@@ -169,7 +169,7 @@ of (lam A F) (arr A B) :-
 
 of (arr A Bx) (sort K) :-
  of A TA, match_sort TA I,
- (pi x\ (of x A :- !) => of (Bx x) (TB x), match_sort (TB x) J),
+ (pi x\ of x A => of (Bx x) (TB x), match_sort (TB x) J),
  max I J K.
 \end{Verbatim}
 
