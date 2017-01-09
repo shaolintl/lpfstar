@@ -1,0 +1,629 @@
+% \pause
+% \alert{text}
+% \uncover<5->{\item foo}  al posto di \item
+%\includegraphics[height=1cm]{moogle}
+\documentclass{beamer}
+\usepackage{graphicx}
+%\usepackage{bcprules}
+\usepackage{verbatim}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+%\usepackage{stmaryrd}
+
+\input{macros.tex}
+
+\newlength{\indentlen}
+\setlength{\indentlen}{0.3cm}
+\newcommand{\TAB}[1][1]{\hspace{#1\indentlen}}
+\newcommand{\osem}{\llbracket}
+\newcommand{\cosem}{\mathcal{C}\llbracket}
+\newcommand{\gosem}{\mathcal{G}\llbracket}
+\newcommand{\csem}{\rrbracket}
+
+\mode<presentation>
+{
+  %\usetheme{Malmoe}
+  %\usetheme{Warsaw}
+  \usetheme{Frankfurt}  % The best
+  %\usetheme{Madrid}  % Bellino
+
+  %\setbeamercovered{transparent} % or whatever (possibly just delete it)
+}
+
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+
+\usepackage{times}
+%\usepackage[T1]{fontenc}
+
+\usepackage{graphicx}
+
+\title{ELPI: fast, Embeddable, $\lambda$Prolog Interpreter }
+
+\author[Claudio Sacerdoti Coen]{C. Dunchev, F. Guidi, C. Sacerdoti Coen, E. Tassi}
+
+\institute[University of Bologna, INRIA]
+{
+  University of Bologna \& INRIA Sophia-Antipolis
+}
+
+\date {Suva (Fiji), 26/11/2015}
+
+\subject{ELPI}
+
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+    \frametitle{Outline}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+\newcommand{\bs}{\textbackslash\,}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+  %\tableofcontents
+\end{frame}
+
+\section{Long Term Project \& Partial Achievements}
+
+\begin{frame}
+ \frametitle{Desiderata}
+ What is the best language to implement Coq?\\~\\
+
+ \begin{enumerate}
+  \item \alert{relational}: simple code reasoning, \alert{backtracking}
+  \item handle terms with \alert{binders}
+  \item manage \alert{existential variables} and instantiation
+  \item delay queries into \alert{constraints}
+  \item \alert{constraint propagation (forward reasoning)}
+ \end{enumerate}
+
+ \begin{center}
+ \begin{tabular}{rcl}
+ 1 + 2 + 3 & = & $\lambda$Prolog\\
+ 1 + 5 & = & CLP (CHR/Prolog)\\
+ 1 + \ldots + 5 & = & \alert{???} $\approx$ CHR/$\lambda$Prolog
+ \end{tabular}
+ \end{center}
+
+ State of the art: low level, error prone, hard to reason/extend, efficient
+ implementation in OCaml/Haskell
+\end{frame}
+
+%\begin{frame}
+% \frametitle{State of the art: Coq/Matita/Agda/\ldots}
+%
+% \alert{$\lambda$-calculus augmented} with existential variables\\~\\
+%
+% \alert{low level} implementation in \alert{OCaml/Haskell}\\~\\
+%
+% opaque, error prone, hard to extend, very efficient code\\~\\
+%
+% user extensions needed:
+% \begin{itemize}
+%  \item \alert{many} declarative, binders-aware, \alert{ad-hoc} languages in\\
+%    \alert{ user space}
+%  \item overall system behaviour too hard to predict
+% \end{itemize}
+%\end{frame}
+
+\begin{frame}[fragile]
+ \frametitle{Why $\lambda$Prolog is not sufficient}
+\begin{verbatim}
+of (app M N) B :- of M (arr A B), of N A.
+of (lam F) (arr A B) :- pi x\bs of x A => of (F x) B.
+\end{verbatim}\\
+
+\only<1>{
+\hspace{0.75cm}\\
+Query:\\\small{
+\begin{tabular}{ll}
+& \texttt{of (app X Y) Z}\\
+$\Leftarrow$ & \texttt{of X (arr A Z), of Y A}\\
+$\Leftarrow$ & \alert{\texttt{X = app X1 X2}}
+               \texttt{, of X1 (arr B (arr a Z)), of Y A}\\
+$\Leftarrow$ & \alert{\texttt{X1 = app X11 X12}}, \ldots\\
+$\Leftarrow$ & \ldots
+\end{tabular}}
+
+~\\
+
+\alert{Diverges} trying to \alert{enumerate} all $\lambda$-terms \texttt{(app X Y)} of type \texttt{Z}.\\
+Curry-Howard: \alert{automatic proof search}\\~\\
+
+\alert{Interactive proof search}= avoid blind enumerations, ask the user\\~\\
+}
+
+\pause
+
+\begin{verbatim}
+delay of X Y on flexible X.
+\end{verbatim}
+
+Query:\\
+$\begin{array}{ll}
+ & \verb+of (app X Y) Z+\\
+ \Leftarrow & \mbox{\texttt{of X (arr A Z)}},\quad \mbox{\texttt{of Y A}}
+\end{array}$
+%\end{frame}
+
+%\begin{frame}[fragile]
+%\frametitle{Constraint Propagation}
+
+ \pause
+
+ ~\\\alert{Constraint propagation (forward reasoning)}:\\~\\
+
+ $\{ \Gamma \vdash $ \verb+of X T+, $\quad \Gamma \vdash $ \verb+of X S+ $\}$
+ $\iff$
+ $\{ \Gamma \vdash $ \verb+of X T+, \verb+S = T+ $\}$
+
+\vspace{10cm}
+
+~
+
+\end{frame}
+
+%\begin{frame}
+ %\frametitle{More Desiderata}
+
+ %\begin{enumerate}
+  %\item $\lambda$Prolog + Constraint Handling/Foward Reasoning
+  %\item easily \alert{embeddable} in OCaml (Coq/Matita integration)
+  %\item \alert{efficient} ($<$ 10x slower than OCaml)
+ %\end{enumerate}
+
+ %~\\First step:
+%
+ %\begin{center}
+ %~\\efficient \alert{Embedded Lambda-Prolog Interpreter (ELPI)}
+ %\end{center}
+%\end{frame}
+
+\begin{frame}
+ \frametitle{First step}
+
+ First step: an efficient $\lambda$Prolog interpreter in OCaml\\~\\
+
+ State of the art (Teyjus):\\
+\begin{itemize}
+ \item fastest implementation of $\lambda$Prolog
+ \item compiler to extended WAM + WAM interpreter (in C)
+ \item great effort into efficient $\beta$-reduction\\
+       \vspace{0.15cm}
+       \small{via explicit substitutions} :-(
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Teyjus}
+ Technical limitations:\\
+ \begin{itemize}
+  \item tiny bounds on number of clauses, registers, \ldots
+  \item restrictions to syntax of $\lambda$Prolog
+  \item no garbage collection
+  \item extremely slow compilation
+  \item not industrial strength
+ \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+ \frametitle{ELPI}
+
+ ELPI = Embedded LambdaProlog Interpreter\\~\\
+
+ Important design principles:
+ \begin{itemize}
+  \item optimize the frequent cases
+  \item piggy-back on OCaml (e.g. garbage collection)
+  \item \alert{avoid reduction} when possible
+ \end{itemize}
+\end{frame}
+
+\begin{frame}
+ \frametitle{ELPI}
+ ELPI vs Teyjus:\\
+ \begin{itemize}
+  \item removes all technical limitation
+  \item $\approx$ \alert{2x faster} when reduction cannot be avoided
+  \item $\approx$ \alert{50x faster} when reduction can be avoided
+  \item code size: 3000 loc vs 75000 loc (\alert{96\% size reduction})
+  \item untyped (type declarations ignored)
+  \item mostly \alert{compatible} with Teyjus
+ \end{itemize}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Validation}
+ Major test case:\\~\\
+ a type-checker for \alert{Landau's Grundlagen in Automath}\\
+ \begin{itemize}
+ \item much smaller and simpler implementation w.r.t.\\
+       native OCaml code (Helena)
+ \item \begin{tabular}[t]{lrl}
+       $>$ & $50x$ & faster than Teyjus\\
+       $\approx$ & $3x$ & slower than interpreted Helena\\
+       $\approx$ & $2x$ & slower than interpreted Coq\\
+       $\approx$ & $12x$ & slower then compiled Coq
+       \end{tabular}
+ \end{itemize}
+
+\end{frame}
+
+\section{$\lambda$Prolog: syntax \& semantics}
+
+\begin{frame}
+ \frametitle{$\lambda$Prolog}
+ $\lambda$Prolog is a superset of Prolog\\~\\
+
+ handles \alert{higher-order abstract syntax}\\~\\
+
+ Example: $\int_0^1 \sin x~dx$ $~=~$ \texttt{integral 0 1 x\bs sin x}\\~\\
+
+ where:
+ \begin{enumerate}
+   \item \texttt{x\bs f x} is $\lambda$-abstraction (i.e. $\lambda x. f~x$)
+   \item \texttt{integral} has type $\mathbb{R} \to \mathbb{R} \to (\mathbb{R} \to \mathbb{R}) \to \mathbb{R}$
+ \end{enumerate}
+\end{frame}
+
+\begin{frame}
+ \frametitle{$\lambda$Prolog}
+
+ Does NOT mix functional and logic programming\\~\\
+
+ $\beta$-reduction is not responsible for computation\\~\\
+
+ $\beta$-reduction used for\\
+ \begin{enumerate}
+  \item renaming (bound) variables
+  \item substitution
+ \end{enumerate}
+\end{frame}
+
+%\begin{frame}
+% \frametitle{$\lambda$Prolog}
+% $\lambda$Prolog avoids most non-logical tricks:\\~\\
+%
+% \begin{tabular}{clc}
+% $\lambda$Prolog &~~~~vs~~~~& Prolog \\~\\
+% \texttt{for\_all (x\bs p x) L} && \texttt{for\_all (p X) X L}\\~\\
+% logical implication \texttt{=>} && \texttt{assert/retract}
+% \end{tabular}
+%\end{frame}
+
+\begin{frame}
+ \frametitle{$\lambda$Prolog}
+
+  Syntax:\\~\\
+
+  \begin{tabular}{ll}
+  \begin{tabular}{llll}
+  \texttt{Q} & ::= & PRED & predicate\\
+             & $|$ & \texttt{true} & true\\
+             & $|$ & \texttt{sigma X\bs Q} & existential quantification\\
+             & $|$ & \texttt{Q,Q} & conjunction\\
+             & $|$ & \texttt{Q;Q} & disjunction\\
+             & $|$ & \texttt{\alert{C => Q}} & \alert{implication}\\
+             & $|$ & \texttt{\alert{pi x\bs Q}} & \alert{universal quantification}
+  \end{tabular}
+  & query\\
+
+  \texttt{C ::= PRED | true | pi X\bs C | C,C | Q => C} & clause\\
+
+
+  \texttt{\alert{PRED ::= TERM}} & predicate\\
+
+  \texttt{TERM ::= x | X | TERM~TERM | \alert{x\bs TERM} | \alert{Q} } & term\\
+ \end{tabular}
+\end{frame}
+
+\begin{frame}
+ \frametitle{$\lambda$Prolog}
+ Semantics:\\~\\
+
+ \begin{tabular}{cl}
+ $\frac
+  {\Gamma, \mbox{\texttt{C}}~\vdash~\mbox{\texttt{Q}}}
+  {\Gamma~\vdash~\mbox{\texttt{C=>Q}}}
+ $
+ &
+ \begin{tabular}{l}
+ The program $\Gamma$ is temporarily\\
+ augmented with the clause \texttt{C}
+ \end{tabular}
+ \\~\\
+
+ $\frac
+  {\Gamma~\vdash~\mbox{\texttt{Q[y/x]}} \quad\mbox{$y$ fresh}}
+  {\Gamma~\vdash~\mbox{\texttt{pi x\bs Q}}}
+ $
+ &
+ \begin{tabular}{l}
+ A fresh constant is temporarily\\
+ introduced.
+ \end{tabular}
+ \\~\\
+
+ \begin{tabular}{l}
+ \texttt{PRED ::= TERM}\\
+ \texttt{TERM ::= \ldots | Q}\\
+ \texttt{eval X :- X}
+ \end{tabular}
+ &
+ \begin{tabular}{l}Dynamic code evaluation.\end{tabular}
+ \\~\\
+
+ binders and $\beta$-redexes
+ &
+ $\alpha$-conversion and $\beta$-reduction
+ \end{tabular}
+\end{frame}
+
+
+\begin{frame}
+ \frametitle{$\lambda$Prolog}
+ unification is \alert{higher order}\\(i.e. up to $\alpha$-conversion and $\beta$-reduction)\\~\\
+
+ and in a \alert{mixed prefix}
+ (e.g. $\forall f\, \exists F\, \forall a~b\, \exists G, F~a = f~G$)\\~\\
+
+ \alert{no most general unifier}\\~\\
+
+ \begin{tabular}{lc}
+ Example: & $F~a = a + a$\\
+ Solutions: &
+ $\begin{array}{l@{~~~}l}F_1 := \lambda x. a+a & F_2 := \lambda x. a+x\\ F_3 := \lambda x. x+a & F_4 := \lambda x.x+x\end{array}$
+ \end{tabular}
+\\~\\~\\
+ 
+ unification is \alert{undecidable}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Pattern Fragment}
+ $X~c_1~\ldots~c_n$ with all $c_i$ distinct and not in the scope of $X$\\~\\
+
+ \alert{unique, most general unifier}\\~\\
+
+ fragment \alert{stable} by computation\\~\\
+
+ very expressive; most code naturally fits in the fragment\\~\\
+
+ \alert{traversal of expressions fits in the fragment}
+\end{frame}
+
+\section{The two uses of $\beta$-reduction}
+
+\begin{frame}[fragile]
+ \frametitle{Simply typed $\lambda$-calculus in $\lambda$Prolog}
+\texttt{app:}$\tau \to \tau \to \tau$
+$\quad$
+\texttt{lam:}$(\tau \to \tau) \to \tau$
+$\quad$
+\texttt{arr:}$\star \to \star \to \star$\\
+Example: $\lambda x.x~x$ = \texttt{lam x\bs app x x}
+
+~\\
+
+Type checking/type inference: \texttt{of:} $\tau \to \star \to o$
+\begin{verbatim}
+of (app M N) B :- of M (arr A B), of N A.
+of (lam F) (arr A B) :- pi x\ of x A => of (F x) B.
+\end{verbatim}\\
+
+~\\
+
+Call-by-name reduction: \texttt{cbn:} $\tau \to \tau \to o$
+\begin{verbatim}
+cbn (lam F) (lam F).
+cbn (app M N) R :- cbn M (lam F), cbn (F N) R.
+\end{verbatim}
+\end{frame}
+
+\begin{frame}
+ \frametitle{First use of $\beta$-reduction}
+
+ To traverse a binder \texttt{b F} (where \texttt{F = y\bs} $\mathcal{M}$)
+  \begin{itemize}
+   \item Pick a fresh name with \texttt{pi x\bs \ldots}
+   \item Apply \texttt{F} to \texttt{x} to compute $\mathcal{M}$[x/y]
+  \end{itemize}~\\
+
+ \texttt{of (lam F) (arr A B) :-\\~~~ \alert{pi x\bs} of x A => of \alert{(F x)} B.}\\~\\
+
+ \pause
+
+ \only<2,3>{
+ \begin{tabular}{ll}
+ & \texttt{of \alert{(lam y\bs app f y)} Z}\\
+ $\Leftarrow$ &
+ \texttt{Z = arr A B,} \\ &
+ \texttt{of x A $\vdash$ of \alert{((lam y\bs app f y) x)} B}\\
+ = &
+ \texttt{Z = arr A B,} \\ &
+ \texttt{of \alert{x} A $\vdash$ of \alert{(app f x)} B}\\
+ \end{tabular}
+ \\~\\}
+
+ \pause
+
+ \alert{Morally not a reduction: only a way to name the bound variable.}\\~\\
+
+ \pause
+
+ \alert{Extremely frequent (structural recursion over syntax)}
+
+ ~\\It fits the pattern fragment
+\end{frame}
+
+\begin{frame}
+ \frametitle{Second use of $\beta$-reduction}
+
+ To delegate instantiation/substitution at the meta-level\\~\\
+
+ \texttt{\hspace{-0.25cm}
+  cbn (app M N) R :- cbn M (lam F), cbn (\alert{F N}) R.
+ }
+
+ \alert{Performed rarely}
+
+ ~\\It escapes the pattern fragment
+
+ ~\\\alert{Avoidable with some effort in presence of delays}\\
+ Hint: \begin{tabular}{l}implement a substitution predicate,\\ delay on existential variables\end{tabular}
+\end{frame}
+
+\begin{frame}
+ \frametitle{$\beta$-reduction and backtracking}
+
+ \only<1,2>{
+ $\beta$-reduction triggers substitution\\~\\
+
+ immediate propagation is costly (multiple traversals)\\~\\
+
+ backtracking can make substitution steps useless\\~\\
+ }
+
+ \pause
+
+ Teyjus: use explicit substitutions\\~\\
+
+ \texttt{(x\ m n) t} $\rightarrow$ \texttt{(m n)[t/x]} $\rightarrow$ \texttt{m[t/x] n[t/x]} $\rightarrow$ \ldots
+
+ \pause
+
+ ~\\Not great idea
+ \begin{itemize}
+   \item too much pressure on \alert{garbage collection}
+   \item fixed \alert{overhead} in every function\\
+         (Prolog fragment slows down)
+   \item most reductions are morally \alert{useless} anyway
+ \end{itemize}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Avoiding $\beta$-reduction}
+
+ Use \alert{hereditary substitutions}\\
+ \begin{itemize}
+   \item $\beta$-redexes are not part of the syntax
+   \item when a substitution would create a $\beta$-redex,\\
+         it triggers another substitution
+ \end{itemize}
+
+ $$(X~c)[\lambda x.t/X] \rightarrow t[c/x]$$
+
+ ~\\reduced overhead to compute weak head normal forms
+\end{frame}
+
+\begin{frame}
+ \frametitle{Avoiding $\beta$-reduction}
+
+ Use \alert{De Brujin LEVELS}\\~\\
+
+ if $n \geq 0$ then $n$ is the $(n+1)-th$ variable bound from outside\\
+ if $n < 0$ then $n$ is a global constant\\~\\
+
+ $$\lambda \alert{x}. f~\alert{x}~(\lambda y. g~\alert{x}~y)
+ = \lambda. -1~\alert{0}~(\lambda. -2~\alert{0}~1)$$
+
+ ~\\constants and variables handled uniformly
+
+ ~\\the variable $x$ has the same number in every context
+\end{frame}
+
+\begin{frame}
+ \frametitle{Avoiding $\beta$-reduction}
+
+ The \alert{reduction-free fragment}:\\~\\
+
+ all existential variables occur as $X^n_m$ where\\~\\
+
+ $X^n_m$ stands for $X~n~\ldots~(n+m)$\\
+ when all variables in $(-\infty,n)$ are in scope for $X$\\~\\
+
+ \begin{itemize}
+  \item is a sub-fragment of the pattern fragment
+    \begin{itemize}
+     \item decidability of unification
+     \item unique and most general unifier
+    \end{itemize}
+  \item extremely frequent case
+  \item admits constant time $\beta$-reduction and unification
+  \item is not stable by computation
+ \end{itemize}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Avoiding $\beta$-reduction}
+
+ Constant time $\beta$-reduction:\\~\\
+
+ assume $0 \ldots (n-1)\vdash X^n := \lambda. \ldots \lambda. t\quad$ Then\\
+
+ \begin{center}
+ $X^n_m = (\lambda. \ldots. \lambda. t)~n~\ldots~(n+m)
+ = t[n/n]\ldots[n+m/n+m] = t$
+ \end{center}
+
+~\\
+
+The first use of $\beta$-reduction is in the fragment:\\~\\
+
+{\small
+\texttt{
+\hspace{-0.2cm}
+of (lam F) (arr A B) :- pi x\bs of x A => of (F x) B.\\
+\hspace{5cm}=\\
+\hspace{-0.75cm}
+\alert{$\forall n$.}(of (lam \alert{F$^n_0$}) (arr A B) :- pi x\bs of x A => of \alert{F$^n_1$} B).
+}}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Avoiding $\beta$-reduction}
+
+ \alert{Constant time unification}: $X^n_m = t$\\~\\
+
+ Outside the fragment: $\beta$-reduction is implemented \alert{naively}\\~\\
+
+ Most other operations can be \alert{optimized} for the $X^n_m$ representation\\~\\
+
+ Tricky point: $X^n_m$ can be generated dinamically
+\end{frame}
+
+\section{Conclusions and future works}
+
+\begin{frame}
+ \frametitle{Conclusions}
+ \begin{itemize}
+  \item we have identified an unstable fragment of $\lambda$Prolog that
+   covers most uses
+  \item hereditary substitutions + De Brujin levels = reduction free handling
+   of the fragment in most cases
+  \item $>$ 50x speed up over Teyjus explicit substitution mechanism (in the fragment)
+  \item $\approx$ 2x speed up over Teyjus with only 4\% of the code\\
+    (carefully ingeneered implementation,\\
+     1 year of optimizations,\\
+     required some deep knowledge on OCaml internals)
+ \end{itemize}
+\end{frame}
+
+\begin{frame}
+ \frametitle{Future works}
+ \begin{itemize}
+  \item integration with CHR-style Constraint Programming
+  \item re-implementation of the elaborator of Coq/Matita
+  \item compilation (can we become 5x faster?)
+ \end{itemize}
+\end{frame}
+
+\end{document}

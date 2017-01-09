@@ -1,0 +1,3 @@
+Higher Order Constraint Logic Programming for Interactive Theorem Proving
+
+Some interactive theorem provers, like Coq, Matita and Agda are implemented around the Curry-Howard isomorphism. Proof checking is type checking, and it can be compactly represented in an Higher Order Logic Programming (HOLP) language / logical framework. Interactive proof construction, however, requires the manipulation of terms containing metavariables, and a significant amount of logic independent code to accomodate metavariables (and narrowing) in "type checking" (aka elaboration, refinement). We propose to delegate such work to the metalanguage by extending HOLP with Constraint Programming features induced by a delay mechanism for ``too flexible'' goals.
